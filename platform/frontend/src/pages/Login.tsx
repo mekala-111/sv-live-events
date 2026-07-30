@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/hooks/useAuth'
+import logo from '@/assets/Logo.png'
 
 const schema = z.object({
   email: z.string().email('Valid email required'),
@@ -68,7 +69,8 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center px-6 pt-20 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
           <div className="text-center">
-            <h1 className="font-display text-4xl font-bold">Welcome Back</h1>
+            <img src={logo} alt="SV Live Events" className="mx-auto h-20 w-20 rounded-full object-cover" />
+            <h1 className="mt-4 font-display text-4xl font-bold">Welcome Back</h1>
             <p className="mt-2 text-white/50">Sign in to your SV Live Events account</p>
           </div>
 
