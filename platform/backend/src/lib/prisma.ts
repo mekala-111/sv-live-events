@@ -19,7 +19,6 @@ function resolveDatabaseUrl(): string | undefined {
   if (!globalForPrisma.sqliteReady) {
     try {
       const here = path.dirname(fileURLToPath(import.meta.url));
-      // dist/lib -> ../../prisma/dev.db  OR src/lib during tsx
       const candidates = [
         path.resolve(here, '../../prisma/dev.db'),
         path.resolve(process.cwd(), 'prisma/dev.db'),
@@ -47,26 +46,11 @@ function createClient(url?: string) {
 
 const dbUrl = resolveDatabaseUrl();
 
-function getPrisma(): PrismaClient {
-  const existing = globalForPrisma.prisma;
-  // Invalidate cached client after `prisma generate` adds models (tsx keeps globalThis)
-  if (existing && 'eventTheme' in existing) return existing;
-  if (existing) {
-    void existing.$disconnect().catch(() => undefined);
-  }
-  const client = createClient(dbUrl);
-  globalForPrisma.prisma = client;
-  return client;
-}
-
-export const prisma = getPrisma();
+export const prisma = globalForPrisma.prisma ?? createClient(dbUrl);
 
 export const prismaRead =
-  globalForPrisma.prismaRead && 'eventTheme' in globalForPrisma.prismaRead
-    ? globalForPrisma.prismaRead
-    : process.env.DATABASE_READ_URL
-      ? createClient(process.env.DATABASE_READ_URL)
-      : prisma;
+  globalForPrisma.prismaRead ??
+  (process.env.DATABASE_READ_URL ? createClient(process.env.DATABASE_READ_URL) : prisma);
 
 globalForPrisma.prisma = prisma;
 globalForPrisma.prismaRead = prismaRead;
