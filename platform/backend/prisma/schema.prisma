@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,7 +17,7 @@ model User {
   avatar       String?
   role         String   @default("CUSTOMER")
   isActive     Boolean  @default(true)
-  refreshToken String?
+  refreshToken String?  @db.Text
   tenantId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -58,11 +58,11 @@ model Package {
   name          String
   tier          String
   slug          String   @unique
-  description   String
+  description   String @db.Text
   price         Float
   cameras       Int      @default(2)
   durationHours Int      @default(4)
-  features      String
+  features      String @db.Text
   isPopular     Boolean  @default(false)
   isActive      Boolean  @default(true)
   sortOrder     Int      @default(0)
@@ -75,7 +75,7 @@ model Package {
 model ExtraService {
   id          String   @id @default(cuid())
   name        String
-  description String
+  description String @db.Text
   price       Float
   icon        String?
   isActive    Boolean  @default(true)
@@ -97,8 +97,8 @@ model Booking {
   venue           String
   city            String
   expectedGuests  Int      @default(100)
-  extras          String?
-  notes           String?
+  extras          String?  @db.Text
+  notes           String?  @db.Text
   subtotal        Float
   taxAmount       Float
   discountAmount  Float    @default(0)
@@ -187,7 +187,7 @@ model Payment {
 model Coupon {
   id            String    @id @default(cuid())
   code          String    @unique
-  description   String?
+  description   String?   @db.Text
   discountType  String
   discountValue Float
   maxUses       Int?
@@ -205,7 +205,7 @@ model GalleryItem {
   mediaType   String
   mediaUrl    String
   thumbnail   String?
-  description String?
+  description String? @db.Text
   isFeatured  Boolean  @default(false)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -217,7 +217,7 @@ model Testimonial {
   name       String
   role       String
   company    String?
-  content    String
+  content    String   @db.Text
   rating     Int      @default(5)
   avatar     String?
   videoUrl   String?
@@ -233,8 +233,8 @@ model Blog {
   id          String   @id @default(cuid())
   title       String
   slug        String   @unique
-  excerpt     String
-  content     String
+  excerpt     String   @db.Text
+  content     String   @db.LongText
   coverImage  String?
   category    String
   isPublished Boolean  @default(true)
@@ -249,7 +249,7 @@ model Notification {
   id        String   @id @default(cuid())
   userId    String
   title     String
-  message   String
+  message   String   @db.Text
   type      String   @default("info")
   isRead    Boolean  @default(false)
   link      String?
@@ -262,7 +262,7 @@ model SupportTicket {
   id          String   @id @default(cuid())
   userId      String
   subject     String
-  description String
+  description String @db.Text
   status      String   @default("OPEN")
   priority    String   @default("medium")
   createdAt   DateTime @default(now())
@@ -275,7 +275,7 @@ model ChatMessage {
   id        String   @id @default(cuid())
   bookingId String
   sender    String
-  message   String
+  message   String   @db.Text
   emoji     String?
   createdAt DateTime @default(now())
 
@@ -288,7 +288,7 @@ model ActivityLog {
   action    String
   entity    String?
   entityId  String?
-  meta      String?
+  meta      String?  @db.Text
   ip        String?
   createdAt DateTime @default(now())
 
@@ -298,7 +298,7 @@ model ActivityLog {
 model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String
+  value     String   @db.Text
   updatedAt DateTime @updatedAt
 }
 
@@ -940,21 +940,21 @@ model EventTheme {
   name                String
   slug                String   @unique
   category            String
-  description         String?
-  previewImage        String?
-  desktopBackground   String?
-  tabletBackground    String?
-  mobileBackground    String?
-  landscapeBackground String?
-  portraitBackground  String?
-  waitingBackground   String?
-  liveBackground      String?
-  popupBackground     String?
-  loginBackground     String?
-  chatBackground      String?
-  overlayImage        String?
-  frameImage          String?
-  particles           String?
+  description         String?  @db.Text
+  previewImage        String?  @db.Text
+  desktopBackground   String?  @db.Text
+  tabletBackground    String?  @db.Text
+  mobileBackground    String?  @db.Text
+  landscapeBackground String?  @db.Text
+  portraitBackground  String?  @db.Text
+  waitingBackground   String?  @db.Text
+  liveBackground      String?  @db.Text
+  popupBackground     String?  @db.Text
+  loginBackground     String?  @db.Text
+  chatBackground      String?  @db.Text
+  overlayImage        String?  @db.Text
+  frameImage          String?  @db.Text
+  particles           String?  @db.Text
   primaryColor        String   @default("#F7B733")
   secondaryColor      String   @default("#FF8A00")
   accentColor         String   @default("#F7B733")
@@ -965,20 +965,20 @@ model EventTheme {
   textColor           String   @default("#FFFFFF")
   borderColor         String   @default("rgba(255,255,255,0.08)")
   glowColor           String   @default("rgba(247,183,51,0.25)")
-  gradientColors      String?  /// JSON string[]
+  gradientColors      String?  @db.Text /// JSON string[]
   fontHeading         String   @default("Space Grotesk")
   fontBody            String   @default("Outfit")
   fontButton          String?
   fontCountdown       String?
-  customFontsJson     String?  /// JSON {name,url}[]
+  customFontsJson     String?  @db.Text /// JSON {name,url}[]
   animationType       String   @default("none")
   animationSpeed      Float    @default(1)
   animationDensity    Float    @default(1)
   animationOpacity    Float    @default(0.6)
-  layersJson          String?  /// JSON ThemeLayer[]
-  musicUrl            String?
-  logoUrl             String?
-  watermarkUrl        String?
+  layersJson          String?  @db.Text /// JSON ThemeLayer[]
+  musicUrl            String?  @db.Text
+  logoUrl             String?  @db.Text
+  watermarkUrl        String?  @db.Text
   status              String   @default("DRAFT") /// DRAFT | PUBLISHED | ARCHIVED
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -993,8 +993,8 @@ model ThemeAsset {
   id        String   @id @default(cuid())
   themeId   String
   assetType String
-  assetPath String
-  label     String?
+  assetPath String   @db.Text
+  label     String?  @db.Text
   positionX Float    @default(0)
   positionY Float    @default(0)
   opacity   Float    @default(1)
@@ -1003,7 +1003,7 @@ model ThemeAsset {
   blur      Float    @default(0)
   visible   Boolean  @default(true)
   sortOrder Int      @default(0)
-  metaJson  String?  /// { fileSize, width, height, mime }
+  metaJson  String?  @db.Text /// { fileSize, width, height, mime }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

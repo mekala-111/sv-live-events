@@ -15,7 +15,6 @@ npm run dev
 # Terminal 2 — API (http://localhost:5001)
 cd platform/backend
 npm install
-npx prisma db push
 npm run prisma:seed
 npm run dev
 
@@ -59,7 +58,6 @@ Camera / ATEM / OBS
 # API
 cd platform/backend
 npm install
-npx prisma db push
 npm run prisma:seed
 npm run dev
 
@@ -72,6 +70,7 @@ npm run dev
 - Platform app: http://localhost:5173  
 - Marketing landing: http://localhost:3000  
 - API: http://localhost:5001/api/health  
+- Backend startup automatically runs `prisma db push --skip-generate`, so schema changes sync on a fresh machine or server boot.
 
 ### Demo accounts
 

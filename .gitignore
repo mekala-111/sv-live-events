@@ -26,6 +26,7 @@ build
 *.db
 *.db-journal
 prisma/prod.db
+.local-mysql/
 
 # Editor directories and files
 .vscode/*

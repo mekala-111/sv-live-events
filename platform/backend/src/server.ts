@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import app, { getPort, logger } from './app.js';
 import { prisma } from './lib/prisma.js';
+import { syncSchemaOnStartup } from './lib/schemaSync.js';
 import { assertProductionSecrets } from './middleware/securityHardening.js';
 import { warmCaches } from './lib/cache.js';
 import { ensureDefaultNodes } from './services/cluster.js';
@@ -101,22 +102,31 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(port, () => {
-  logger.info(`SV Live Events API running on http://localhost:${port}`);
-  logger.info(`Socket.IO ready for live chat rooms`);
-  void (async () => {
-    try {
-      await ensureDefaultNodes();
-      const live = await prisma.stream.findMany({
-        where: { status: { in: ['LIVE', 'WAITING', 'SCHEDULED'] } },
-        select: { slug: true },
-        take: 100,
-      });
-      await warmCaches(live.map((s) => s.slug));
-    } catch (err) {
-      logger.warn(`Startup warm failed: ${(err as Error).message}`);
-    }
-  })();
+async function bootstrap() {
+  await syncSchemaOnStartup();
+
+  httpServer.listen(port, () => {
+    logger.info(`SV Live Events API running on http://localhost:${port}`);
+    logger.info(`Socket.IO ready for live chat rooms`);
+    void (async () => {
+      try {
+        await ensureDefaultNodes();
+        const live = await prisma.stream.findMany({
+          where: { status: { in: ['LIVE', 'WAITING', 'SCHEDULED'] } },
+          select: { slug: true },
+          take: 100,
+        });
+        await warmCaches(live.map((s) => s.slug));
+      } catch (err) {
+        logger.warn(`Startup warm failed: ${(err as Error).message}`);
+      }
+    })();
+  });
+}
+
+void bootstrap().catch((err) => {
+  logger.error((err as Error).message);
+  process.exit(1);
 });
 
 export { io };
