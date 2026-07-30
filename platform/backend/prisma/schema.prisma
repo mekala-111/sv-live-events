@@ -941,19 +941,19 @@ model EventTheme {
   slug                String   @unique
   category            String
   description         String?  @db.Text
-  previewImage        String?  @db.Text
-  desktopBackground   String?  @db.Text
-  tabletBackground    String?  @db.Text
-  mobileBackground    String?  @db.Text
-  landscapeBackground String?  @db.Text
-  portraitBackground  String?  @db.Text
-  waitingBackground   String?  @db.Text
-  liveBackground      String?  @db.Text
-  popupBackground     String?  @db.Text
-  loginBackground     String?  @db.Text
-  chatBackground      String?  @db.Text
-  overlayImage        String?  @db.Text
-  frameImage          String?  @db.Text
+  previewImage        String?  @db.LongText
+  desktopBackground   String?  @db.LongText
+  tabletBackground    String?  @db.LongText
+  mobileBackground    String?  @db.LongText
+  landscapeBackground String?  @db.LongText
+  portraitBackground  String?  @db.LongText
+  waitingBackground   String?  @db.LongText
+  liveBackground      String?  @db.LongText
+  popupBackground     String?  @db.LongText
+  loginBackground     String?  @db.LongText
+  chatBackground      String?  @db.LongText
+  overlayImage        String?  @db.LongText
+  frameImage          String?  @db.LongText
   particles           String?  @db.Text
   primaryColor        String   @default("#F7B733")
   secondaryColor      String   @default("#FF8A00")
@@ -976,9 +976,9 @@ model EventTheme {
   animationDensity    Float    @default(1)
   animationOpacity    Float    @default(0.6)
   layersJson          String?  @db.Text /// JSON ThemeLayer[]
-  musicUrl            String?  @db.Text
-  logoUrl             String?  @db.Text
-  watermarkUrl        String?  @db.Text
+  musicUrl            String?  @db.LongText
+  logoUrl             String?  @db.LongText
+  watermarkUrl        String?  @db.LongText
   status              String   @default("DRAFT") /// DRAFT | PUBLISHED | ARCHIVED
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -993,7 +993,7 @@ model ThemeAsset {
   id        String   @id @default(cuid())
   themeId   String
   assetType String
-  assetPath String   @db.Text
+  assetPath String   @db.LongText
   label     String?  @db.Text
   positionX Float    @default(0)
   positionY Float    @default(0)

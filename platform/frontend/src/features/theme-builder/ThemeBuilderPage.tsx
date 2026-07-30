@@ -60,6 +60,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'animation', label: 'Animation' },
 ]
 
+function durableUrl(url?: string | null) {
+  if (!url || url.startsWith('blob:')) return null
+  return url
+}
+
 function recordToForm(t: EventThemeRecord): ThemeFormValues {
   const layers =
     t.layers ||
@@ -80,7 +85,23 @@ function recordToForm(t: EventThemeRecord): ThemeFormValues {
     layers,
     gradientColors,
     customFonts,
-    assets: t.assets || [],
+    previewImage: durableUrl(t.previewImage),
+    desktopBackground: durableUrl(t.desktopBackground),
+    tabletBackground: durableUrl(t.tabletBackground),
+    mobileBackground: durableUrl(t.mobileBackground),
+    landscapeBackground: durableUrl(t.landscapeBackground),
+    portraitBackground: durableUrl(t.portraitBackground),
+    waitingBackground: durableUrl(t.waitingBackground),
+    liveBackground: durableUrl(t.liveBackground),
+    popupBackground: durableUrl(t.popupBackground),
+    loginBackground: durableUrl(t.loginBackground),
+    chatBackground: durableUrl(t.chatBackground),
+    overlayImage: durableUrl(t.overlayImage),
+    frameImage: durableUrl(t.frameImage),
+    musicUrl: durableUrl(t.musicUrl),
+    logoUrl: durableUrl(t.logoUrl),
+    watermarkUrl: durableUrl(t.watermarkUrl),
+    assets: (t.assets || []).map((a) => ({ ...a, assetPath: durableUrl(a.assetPath) || '' })),
   }
 }
 
@@ -169,12 +190,16 @@ export default function ThemeBuilderPage() {
   }
 
   const uploadToField = async (field: keyof ThemeFormValues, file: File) => {
-    const { url, meta } = await readAssetFile(file)
-    form.setValue(field, url as never, { shouldDirty: true })
-    if (field === 'desktopBackground' && !form.getValues('previewImage')) {
-      form.setValue('previewImage', url)
+    try {
+      const { url, meta } = await readAssetFile(file)
+      form.setValue(field, url as never, { shouldDirty: true })
+      if (field === 'desktopBackground' && !form.getValues('previewImage')) {
+        form.setValue('previewImage', url)
+      }
+      toast(`${field} uploaded · ${formatBytes(meta.fileSize)}${meta.width ? ` · ${meta.width}×${meta.height}` : ''}`)
+    } catch (e) {
+      toast((e as Error).message || 'Upload failed', 'error')
     }
-    toast(`${field} uploaded · ${formatBytes(meta.fileSize)}${meta.width ? ` · ${meta.width}×${meta.height}` : ''}`)
   }
 
   const googleFontHref = useMemo(() => {
@@ -588,14 +613,18 @@ export default function ThemeBuilderPage() {
                           <UploadRow
                             value={asset.assetPath || null}
                             onUpload={async (f) => {
-                              const { url, meta } = await readAssetFile(f)
-                              updateAsset(i, {
-                                ...asset,
-                                assetPath: url,
-                                meta,
-                                metaJson: JSON.stringify(meta),
-                                label: asset.label || f.name,
-                              })
+                              try {
+                                const { url, meta } = await readAssetFile(f)
+                                updateAsset(i, {
+                                  ...asset,
+                                  assetPath: url,
+                                  meta,
+                                  metaJson: JSON.stringify(meta),
+                                  label: asset.label || f.name,
+                                })
+                              } catch (e) {
+                                toast((e as Error).message || 'Upload failed', 'error')
+                              }
                             }}
                             onClear={() => updateAsset(i, { ...asset, assetPath: '' })}
                             meta={asset.meta}
@@ -802,10 +831,17 @@ function UploadRow({
     <div className="flex items-center gap-3">
       <div className="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-white/10 bg-[#0a0a0a]">
         {value ? (
-          value.match(/\.(mp4|webm)$/i) || value.startsWith('blob:') && meta?.mime?.startsWith('video') ? (
+          value.startsWith('data:video/') || value.match(/\.(mp4|webm)$/i) || (value.startsWith('blob:') && meta?.mime?.startsWith('video')) ? (
             <video src={value} className="h-full w-full object-cover" muted />
           ) : (
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            <img
+              src={value.startsWith('blob:') ? '' : value}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+              }}
+            />
           )
         ) : (
           <Upload className="h-4 w-4 text-white/25" />

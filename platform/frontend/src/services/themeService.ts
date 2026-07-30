@@ -68,12 +68,23 @@ export async function deleteTheme(id: string) {
   await api.delete(`/themes/${id}`)
 }
 
-/** Read file → object URL + metadata (CDN upload later) */
+/** Read file → durable data URL + metadata (CDN upload later) */
 export async function readAssetFile(file: File): Promise<{
   url: string
   meta: { fileSize: number; width?: number; height?: number; mime: string }
 }> {
-  const url = URL.createObjectURL(file)
+  // ponytail: data URLs until CDN upload exists; keep under ~4MB so JSON body stays under API limit
+  if (file.size > 4 * 1024 * 1024) {
+    throw new Error('Image must be 4 MB or smaller')
+  }
+
+  const url = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Could not read file'))
+    reader.readAsDataURL(file)
+  })
+
   const meta: { fileSize: number; width?: number; height?: number; mime: string } = {
     fileSize: file.size,
     mime: file.type,
@@ -90,7 +101,6 @@ export async function readAssetFile(file: File): Promise<{
       img.src = url
     })
   }
-  // ponytail: object URLs for builder preview; persist remote/CDN URL when upload service exists
   return { url, meta }
 }
 
