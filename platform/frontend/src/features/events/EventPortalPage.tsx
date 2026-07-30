@@ -208,13 +208,7 @@ export default function EventPortalPage() {
         </div>
 
         <FormProvider {...form}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit('draft')
-            }}
-            className="space-y-6"
-          >
+          <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
               <EventInformationSection />
               <YouTubeStreamingSection onCopy={onCopy} />
@@ -229,7 +223,7 @@ export default function EventPortalPage() {
               onDraft={() => submit('draft')}
               onPublish={() => submit('publish')}
             />
-          </form>
+          </div>
         </FormProvider>
 
         <footer className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-white/[0.06] py-6 text-xs text-white/35 sm:flex-row">

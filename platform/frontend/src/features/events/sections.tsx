@@ -69,6 +69,15 @@ function validateImage(file: File, maxSize: number) {
   return null
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Could not read image'))
+    reader.readAsDataURL(file)
+  })
+}
+
 function SingleImageUpload({
   label,
   hint,
@@ -86,15 +95,19 @@ function SingleImageUpload({
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
 
-  const accept = (file?: File | null) => {
+  const accept = async (file?: File | null) => {
     if (!file) return
     const message = validateImage(file, maxSize)
     if (message) {
       setError(message)
       return
     }
-    setError('')
-    onChange(URL.createObjectURL(file))
+    try {
+      setError('')
+      onChange(await fileToDataUrl(file))
+    } catch {
+      setError('Could not read image')
+    }
   }
 
   return (
@@ -156,7 +169,7 @@ function EventImagesUpload() {
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
 
-  const addFiles = (files: FileList | File[]) => {
+  const addFiles = async (files: FileList | File[]) => {
     const next = [...images]
     for (const file of Array.from(files)) {
       if (next.length >= MAX_EVENT_IMAGES) {
@@ -168,7 +181,11 @@ function EventImagesUpload() {
         setError(message)
         continue
       }
-      next.push(URL.createObjectURL(file))
+      try {
+        next.push(await fileToDataUrl(file))
+      } catch {
+        setError('Could not read image')
+      }
     }
     setValue('eventImages', next, { shouldDirty: true, shouldValidate: true })
     if (next.length <= MAX_EVENT_IMAGES) setError('')

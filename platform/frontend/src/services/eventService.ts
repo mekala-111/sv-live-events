@@ -121,6 +121,11 @@ function slugify(name: string) {
     .slice(0, 48) || `event${Date.now().toString(36)}`
 }
 
+function persistUrl(url: string | null | undefined) {
+  if (!url || url.startsWith('blob:')) return null
+  return url
+}
+
 function toPortal(data: EventFormValues, as: 'draft' | 'publish', slug: string, password: string) {
   return {
     serviceType: 'youtube' as const,
@@ -138,10 +143,10 @@ function toPortal(data: EventFormValues, as: 'draft' | 'publish', slug: string, 
     youtubeLiveKey: data.youtubeLiveKey,
     teaserUrl: data.teaserUrl,
     scrollMessage: data.scrollMessage,
-    eventImages: data.eventImages ?? [],
-    logo: data.logo ?? null,
-    customImage: data.customImage ?? null,
-    whatsappImage: data.whatsappImage ?? null,
+    eventImages: (data.eventImages ?? []).map(persistUrl).filter((u): u is string => Boolean(u)),
+    logo: persistUrl(data.logo),
+    customImage: persistUrl(data.customImage),
+    whatsappImage: persistUrl(data.whatsappImage),
     watchLiveButton: data.watchLiveButton,
     socialShare: data.socialShare,
     whatsappNumber: data.whatsappNumber,

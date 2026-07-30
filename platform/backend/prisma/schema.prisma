@@ -308,7 +308,7 @@ model Stream {
   title           String
   slug            String    @unique
   eventType       String
-  description     String?
+  description     String?  @db.LongText
   rtmpUrl         String
   streamKey       String    @unique
   hlsUrl          String?

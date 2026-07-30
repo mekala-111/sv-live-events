@@ -189,12 +189,6 @@ router.get('/events/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'STAF
   try {
     const stream = await prisma.stream.findUnique({
       where: { id: param(req.params.id) },
-      include: {
-        recordings: true,
-        analytics: { orderBy: { recordedAt: 'desc' }, take: 50 },
-        messages: { where: { isDeleted: false }, orderBy: { createdAt: 'desc' }, take: 50 },
-        sessions: { orderBy: { joinedAt: 'desc' }, take: 50 },
-      },
     });
     if (!stream) throw new AppError('Stream not found', 404);
     const viewerBase = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -219,7 +213,7 @@ const updateSchema = z.object({
     .max(48)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$|^[a-z0-9]+$/, 'Invalid slug')
     .optional(),
-  scheduledAt: z.string().datetime().nullable().optional(),
+  scheduledAt: z.union([z.string().datetime(), z.null()]).optional(),
   isRecording: z.boolean().optional(),
   password: z.string().min(4).optional(),
   publish: z.boolean().optional(),
@@ -307,6 +301,10 @@ router.patch('/events/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'ST
       },
     });
   } catch (err) {
+    const prismaErr = err as { code?: string; meta?: { target?: string }; message?: string };
+    if (prismaErr.code === 'P2000' || /Data too long|too long/i.test(prismaErr.message || '')) {
+      return next(new AppError('Event data too large to save. Use smaller images.', 400));
+    }
     next(err);
   }
 });
