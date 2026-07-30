@@ -1,4 +1,4 @@
-/** API-ready event endpoints — swap mock service when backend is live */
+/** Event portal API (streams + portal JSON) */
 export {
   fetchEvent,
   saveEvent,
@@ -6,4 +6,5 @@ export {
   deleteEvent,
   fetchAnalytics,
   checkSlugAvailable,
+  listEvents,
 } from '@/services/eventService'

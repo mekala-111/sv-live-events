@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Controller,
   useFieldArray,
@@ -88,11 +88,22 @@ function TextArea({
 export function BasicInfoSection({ onSave, saving }: { onSave: () => void; saving?: boolean }) {
   const { register, control, setValue, watch } = useFormContext<EventFormValues>()
   const category = watch('category')
+  const name = watch('name')
   const slug = watch('slug')
   const subOptions = useMemo(
     () => SUB_CATEGORIES[category] ?? SUB_CATEGORIES.default,
     [category],
   )
+
+  useEffect(() => {
+    if (!name || slug) return
+    const next = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 48)
+    if (next.length >= 3) setValue('slug', next, { shouldValidate: true })
+  }, [name, slug, setValue])
 
   return (
     <SectionCard

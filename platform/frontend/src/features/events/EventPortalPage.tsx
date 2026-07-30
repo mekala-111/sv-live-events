@@ -4,6 +4,7 @@ import { FormProvider, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
+import { Plus } from 'lucide-react'
 import { DEFAULT_EVENT } from '@/constants/eventPortal'
 import { eventSchema } from '@/features/events/schema'
 import type { EventFormValues } from '@/types/event'
@@ -12,11 +13,13 @@ import {
   duplicateEvent,
   fetchAnalytics,
   fetchEvent,
+  listEvents,
   saveEvent,
 } from '@/services/eventService'
 import { AdminHeader } from '@/components/layout/AdminHeader'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EventPortalSkeleton } from '@/components/ui/Skeleton'
+import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -36,6 +39,8 @@ import {
 
 type OutletCtx = { openMobileNav: () => void }
 
+const STORAGE_KEY = 'sv_event_portal_id'
+
 export default function EventPortalPage() {
   const outlet = useOutletContext<OutletCtx | undefined>()
   const openMobileNav = outlet?.openMobileNav ?? (() => {})
@@ -43,9 +48,38 @@ export default function EventPortalPage() {
   const { toast, ToastHost } = useToast()
   const queryClient = useQueryClient()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [eventId, setEventId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY))
+  const [creating, setCreating] = useState(false)
 
-  const eventQuery = useQuery({ queryKey: ['event', 'evt_demo'], queryFn: () => fetchEvent() })
-  const analyticsQuery = useQuery({ queryKey: ['event-analytics'], queryFn: fetchAnalytics })
+  const listQuery = useQuery({ queryKey: ['events'], queryFn: listEvents })
+
+  useEffect(() => {
+    if (listQuery.data && listQuery.data.length === 0) setCreating(true)
+  }, [listQuery.data])
+
+  useEffect(() => {
+    if (!listQuery.data?.length || creating) return
+    const stillThere = eventId && listQuery.data.some((e) => e.id === eventId)
+    if (!stillThere) {
+      const next = listQuery.data[0].id
+      setEventId(next)
+      localStorage.setItem(STORAGE_KEY, next)
+    }
+  }, [listQuery.data, eventId, creating])
+
+  const activeId = creating ? null : eventId
+
+  const eventQuery = useQuery({
+    queryKey: ['event', activeId],
+    queryFn: () => fetchEvent(activeId!),
+    enabled: Boolean(activeId),
+  })
+
+  const analyticsQuery = useQuery({
+    queryKey: ['event-analytics', activeId],
+    queryFn: () => fetchAnalytics(activeId!),
+    enabled: Boolean(activeId),
+  })
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -54,33 +88,68 @@ export default function EventPortalPage() {
   })
 
   useEffect(() => {
+    if (creating) {
+      const stamp = Date.now().toString(36)
+      form.reset({
+        ...DEFAULT_EVENT,
+        name: 'New Live Event',
+        slug: `event-${stamp}`,
+        status: 'draft',
+        streamKey: '',
+        guestPassword: `guest${stamp.slice(-6)}`,
+        invitationLink: '',
+      })
+      return
+    }
     if (eventQuery.data) form.reset(eventQuery.data)
-  }, [eventQuery.data, form])
+  }, [eventQuery.data, creating, form])
+
+  const apiErr = (err: unknown, fallback: string) => {
+    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    return msg || fallback
+  }
 
   const saveMutation = useMutation({
-    mutationFn: ({ data, as }: { data: EventFormValues; as: 'draft' | 'publish' }) => saveEvent(data, as),
-    onSuccess: (_, vars) => {
+    mutationFn: ({ data, as }: { data: EventFormValues; as: 'draft' | 'publish' }) =>
+      saveEvent(data, as, activeId ?? undefined),
+    onSuccess: (saved, vars) => {
+      setCreating(false)
+      if (saved.id) {
+        setEventId(saved.id)
+        localStorage.setItem(STORAGE_KEY, saved.id)
+      }
+      queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['event'] })
       toast(vars.as === 'publish' ? 'Event published successfully' : 'Draft saved')
     },
-    onError: () => toast('Could not save event', 'error'),
+    onError: (err) => toast(apiErr(err, 'Could not save event'), 'error'),
   })
 
   const duplicateMutation = useMutation({
-    mutationFn: duplicateEvent,
+    mutationFn: () => duplicateEvent(activeId!),
     onSuccess: (data) => {
+      if (data.id) {
+        setEventId(data.id)
+        localStorage.setItem(STORAGE_KEY, data.id)
+      }
+      setCreating(false)
       form.reset(data)
+      queryClient.invalidateQueries({ queryKey: ['events'] })
       toast('Event duplicated')
     },
+    onError: (err) => toast(apiErr(err, 'Could not duplicate'), 'error'),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deleteEvent,
+    mutationFn: () => deleteEvent(activeId!),
     onSuccess: () => {
       setConfirmDelete(false)
-      form.reset(DEFAULT_EVENT)
+      localStorage.removeItem(STORAGE_KEY)
+      setEventId(null)
+      queryClient.invalidateQueries({ queryKey: ['events'] })
       toast('Event deleted', 'info')
     },
+    onError: (err) => toast(apiErr(err, 'Could not delete'), 'error'),
   })
 
   const onCopy = async (text: string, label: string) => {
@@ -100,11 +169,23 @@ export default function EventPortalPage() {
 
   const onPreview = () => {
     const slug = form.getValues('slug')
+    if (!slug) return toast('Set a slug first', 'error')
     window.open(`/live/${slug}`, '_blank')
     toast('Opening preview', 'info')
   }
 
-  if (eventQuery.isLoading) return <EventPortalSkeleton />
+  const onNew = () => {
+    setCreating(true)
+    setEventId(null)
+  }
+
+  const onSelect = (id: string) => {
+    setCreating(false)
+    setEventId(id)
+    localStorage.setItem(STORAGE_KEY, id)
+  }
+
+  if (listQuery.isLoading || (activeId && eventQuery.isLoading)) return <EventPortalSkeleton />
 
   return (
     <>
@@ -124,22 +205,30 @@ export default function EventPortalPage() {
       />
 
       <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mb-8">
-          <p className="text-sm text-white/45">
-            Configure every detail of your live event — streaming, branding, access, and publish in one place.
-          </p>
-          {form.watch('themeId') && (
-            <div
-              className="mt-4 h-1.5 w-full max-w-xs rounded-full opacity-80"
-              style={{
-                background:
-                  form.watch('themeId') === 'wedding'
-                    ? 'linear-gradient(90deg,#f7b733,#ff8a00)'
-                    : undefined,
-              }}
-              aria-hidden
-            />
-          )}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm text-white/45">
+              Configure every detail of your live event — streaming, branding, access, and publish in one place.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white"
+              value={creating ? '' : eventId ?? ''}
+              onChange={(e) => e.target.value && onSelect(e.target.value)}
+            >
+              {creating && <option value="">New event…</option>}
+              {(listQuery.data ?? []).map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title} ({e.status})
+                </option>
+              ))}
+              {!listQuery.data?.length && !creating && <option value="">No events yet</option>}
+            </select>
+            <Button type="button" variant="outline" size="sm" onClick={onNew}>
+              <Plus className="mr-1 h-4 w-4" /> New
+            </Button>
+          </div>
         </div>
 
         <FormProvider {...form}>
@@ -180,8 +269,8 @@ export default function EventPortalPage() {
               onPreview={onPreview}
               onDraft={() => submit('draft')}
               onPublish={() => submit('publish')}
-              onDuplicate={() => duplicateMutation.mutate()}
-              onDelete={() => setConfirmDelete(true)}
+              onDuplicate={() => activeId && duplicateMutation.mutate()}
+              onDelete={() => activeId && setConfirmDelete(true)}
             />
           </form>
         </FormProvider>
@@ -196,7 +285,7 @@ export default function EventPortalPage() {
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         title="Delete event?"
-        message="This will reset the current event draft. This action cannot be undone."
+        message="This permanently deletes the stream and related sessions. This cannot be undone."
         confirmLabel="Delete Event"
         danger
         loading={deleteMutation.isPending}

@@ -5,7 +5,7 @@ import { param } from '../utils/params.js';
 
 const router = Router();
 
-router.use(requireAuth, requireRole('ADMIN', 'STAFF'));
+router.use(requireAuth, requireRole('ADMIN', 'STAFF', 'SUPER_ADMIN'));
 
 router.get('/dashboard', async (_req, res, next) => {
   try {
@@ -94,6 +94,39 @@ router.patch('/notifications/:id/read', async (req, res, next) => {
       data: { isRead: true },
     });
     res.json({ success: true, data: notification });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/payments', async (_req, res, next) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      take: 100,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        booking: {
+          select: {
+            bookingCode: true,
+            eventTitle: true,
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
+    });
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/blogs', async (_req, res, next) => {
+  try {
+    const blogs = await prisma.blog.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { author: { select: { name: true } } },
+    });
+    res.json({ success: true, data: blogs });
   } catch (err) {
     next(err);
   }

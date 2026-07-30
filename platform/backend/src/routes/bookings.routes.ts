@@ -161,10 +161,15 @@ router.post('/', requireAuth, requireRole('CUSTOMER', 'ADMIN'), validate(createB
 
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'STAFF';
+    const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'STAFF' || req.user!.role === 'SUPER_ADMIN';
     const bookings = await prisma.booking.findMany({
       where: isAdmin ? {} : { userId: req.user!.userId },
-      include: { package: true, invoice: true, liveEvent: true },
+      include: {
+        package: true,
+        invoice: true,
+        liveEvent: true,
+        user: { select: { name: true, email: true, phone: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
     res.json({ success: true, data: bookings });
@@ -190,7 +195,7 @@ router.get('/:id', requireAuth, async (req, res, next) => {
       throw new AppError('Booking not found', 404);
     }
 
-    const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'STAFF';
+    const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'STAFF' || req.user!.role === 'SUPER_ADMIN';
     if (!isAdmin && booking.userId !== req.user!.userId) {
       throw new AppError('Access denied', 403);
     }

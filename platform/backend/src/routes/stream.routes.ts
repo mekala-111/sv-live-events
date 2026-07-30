@@ -210,6 +210,95 @@ router.get('/events/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'STAF
   }
 });
 
+const updateSchema = z.object({
+  title: z.string().min(3).optional(),
+  eventType: z.string().min(2).optional(),
+  slug: z
+    .string()
+    .min(3)
+    .max(48)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$|^[a-z0-9]+$/, 'Invalid slug')
+    .optional(),
+  scheduledAt: z.string().datetime().nullable().optional(),
+  isRecording: z.boolean().optional(),
+  password: z.string().min(4).optional(),
+  publish: z.boolean().optional(),
+  /** Full event-portal form; stored under description.portal */
+  portal: z.record(z.string(), z.any()).optional(),
+});
+
+/** Admin: update stream + optional portal config JSON */
+router.patch('/events/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'STAFF'), validate(updateSchema), async (req, res, next) => {
+  try {
+    const id = param(req.params.id);
+    const existing = await prisma.stream.findUnique({ where: { id } });
+    if (!existing) throw new AppError('Stream not found', 404);
+
+    const body = req.body as z.infer<typeof updateSchema>;
+    const prev = (parseWebsiteConfig(existing.description) || {}) as Record<string, unknown>;
+    const data: Record<string, unknown> = {};
+
+    if (body.title) data.title = body.title;
+    if (body.eventType) data.eventType = body.eventType;
+    if (body.isRecording !== undefined) data.isRecording = body.isRecording;
+    if (body.scheduledAt !== undefined) {
+      data.scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : null;
+    }
+
+    if (body.slug && body.slug !== existing.slug) {
+      const clash = await prisma.stream.findUnique({ where: { slug: body.slug } });
+      if (clash) throw new AppError('Slug already in use', 409);
+      data.slug = body.slug;
+    }
+
+    if (body.password) {
+      data.passwordHash = await hashPassword(body.password);
+    }
+
+    if (body.portal) {
+      const portal = body.portal;
+      const socials = (portal.socials || {}) as Record<string, string>;
+      const merged = {
+        ...prev,
+        portal,
+        designId: (portal.themeId as string) || prev.designId,
+        youtubeLiveUrl: socials.youtube || prev.youtubeLiveUrl,
+        whatsappNumber: socials.whatsapp || prev.whatsappNumber,
+        teaserUrl: socials.website || prev.teaserUrl,
+      };
+      data.description = JSON.stringify(merged);
+    }
+
+    if (body.publish) {
+      const descStr = (data.description as string) || existing.description;
+      const website = parseWebsiteConfig(descStr);
+      if (isYouTubeEvent(website)) {
+        data.status = 'LIVE';
+        if (!existing.startedAt) data.startedAt = new Date();
+      } else if (body.scheduledAt || existing.scheduledAt) {
+        data.status = 'SCHEDULED';
+      } else {
+        data.status = 'WAITING';
+      }
+    }
+
+    const stream = await prisma.stream.update({
+      where: { id },
+      data: data as Parameters<typeof prisma.stream.update>[0]['data'],
+    });
+    const viewerBase = process.env.CLIENT_URL || 'http://localhost:5173';
+    res.json({
+      success: true,
+      data: {
+        ...stream,
+        viewerUrl: `${viewerBase}/live/${stream.slug}`,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/events/:id/start', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'STAFF'), async (req, res, next) => {
   try {
     const stream = await prisma.stream.update({
