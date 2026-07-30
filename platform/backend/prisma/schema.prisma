@@ -1,0 +1,1014 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  phone        String?
+  avatar       String?
+  role         String   @default("CUSTOMER")
+  isActive     Boolean  @default(true)
+  refreshToken String?
+  tenantId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant           Tenant?           @relation(fields: [tenantId], references: [id])
+  customer         Customer?
+  bookings         Booking[]         @relation("CustomerBookings")
+  assignedBookings Booking[]         @relation("StaffBookings")
+  notifications    Notification[]
+  supportTickets   SupportTicket[]
+  activityLogs     ActivityLog[]
+  blogs            Blog[]
+  testimonials     Testimonial[]     @relation("TestimonialAuthor")
+  streamsCreated   Stream[]          @relation("StreamCreator")
+  mutedInStreams   StreamMute[]
+  favourites       ContentFavourite[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  company   String?
+  address   String?
+  city      String?
+  state     String?
+  gstNumber String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+  invoices Invoice[]
+  leads    CrmLead[]
+}
+
+model Package {
+  id            String   @id @default(cuid())
+  name          String
+  tier          String
+  slug          String   @unique
+  description   String
+  price         Float
+  cameras       Int      @default(2)
+  durationHours Int      @default(4)
+  features      String
+  isPopular     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings Booking[]
+}
+
+model ExtraService {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  bookingCode     String   @unique
+  userId          String
+  customerId      String?
+  packageId       String
+  assignedStaffId String?
+  eventType       String
+  eventTitle      String
+  eventDate       DateTime
+  eventEndDate    DateTime?
+  venue           String
+  city            String
+  expectedGuests  Int      @default(100)
+  extras          String?
+  notes           String?
+  subtotal        Float
+  taxAmount       Float
+  discountAmount  Float    @default(0)
+  totalAmount     Float
+  couponCode      String?
+  status          String   @default("PENDING")
+  paymentStatus   String   @default("PENDING")
+  streamPassword  String?
+  streamUrl       String?
+  recordingUrl    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user          User          @relation("CustomerBookings", fields: [userId], references: [id])
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  package       Package       @relation(fields: [packageId], references: [id])
+  assignedStaff User?         @relation("StaffBookings", fields: [assignedStaffId], references: [id])
+  invoice       Invoice?
+  payments      Payment[]
+  liveEvent     LiveEvent?
+  chatMessages  ChatMessage[]
+
+  @@index([userId, status])
+  @@index([status, eventDate])
+  @@index([customerId])
+}
+
+model LiveEvent {
+  id           String    @id @default(cuid())
+  bookingId    String    @unique
+  title        String
+  streamKey    String    @unique
+  embedUrl     String?
+  isLive       Boolean   @default(false)
+  viewerCount  Int       @default(0)
+  passwordHash String?
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  bookingId     String    @unique
+  customerId    String
+  amount        Float
+  taxAmount     Float
+  totalAmount   Float
+  status        String    @default("DRAFT")
+  dueDate       DateTime
+  paidAt        DateTime?
+  pdfUrl        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  bookingId         String
+  amount            Float
+  currency          String   @default("INR")
+  status            String   @default("PENDING")
+  provider          String   @default("razorpay")
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  method            String?
+  failureReason     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, status])
+  @@index([razorpayOrderId])
+  @@index([status, createdAt])
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  description   String?
+  discountType  String
+  discountValue Float
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model GalleryItem {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  mediaType   String
+  mediaUrl    String
+  thumbnail   String?
+  description String?
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  name       String
+  role       String
+  company    String?
+  content    String
+  rating     Int      @default(5)
+  avatar     String?
+  videoUrl   String?
+  isFeatured Boolean  @default(true)
+  authorId   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author User? @relation("TestimonialAuthor", fields: [authorId], references: [id])
+}
+
+model Blog {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String
+  coverImage  String?
+  category    String
+  isPublished Boolean  @default(true)
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  subject     String
+  description String
+  status      String   @default("OPEN")
+  priority    String   @default("medium")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  bookingId String
+  sender    String
+  message   String
+  emoji     String?
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  meta      String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Private live stream (RTMP ingest → SRS → HLS/WebRTC playback)
+model Stream {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  eventType       String
+  description     String?
+  rtmpUrl         String
+  streamKey       String    @unique
+  hlsUrl          String?
+  webrtcUrl       String?
+  passwordHash    String
+  /// SCHEDULED | WAITING | LIVE | PAUSED | OFFLINE | ENDED | ARCHIVED
+  status          String    @default("SCHEDULED")
+  isRecording     Boolean   @default(true)
+  ingestActive    Boolean   @default(false)
+  publisherToken  String?
+  peakViewers     Int       @default(0)
+  currentViewers  Int       @default(0)
+  totalJoins      Int       @default(0)
+  slowModeSec     Int       @default(0)
+  allowGifs       Boolean   @default(true)
+  bookingId       String?
+  tenantId        String?
+  maxDevices      Int       @default(5)
+  maxConcurrent   Int       @default(3)
+  geoAllow        String?
+  geoBlock        String?
+  drmMode         String?   /// NONE | WIDEVINE | FAIRPLAY | PLAYREADY
+  originNodeId    String?
+  seriesId        String?
+  templateId      String?
+  recurrenceRule  String?   /// RRULE string
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  pausedAt        DateTime?
+  endedAt         DateTime?
+  lastHeartbeatAt DateTime?
+  thumbnail       String?
+  pinnedMessage   String?
+  createdById     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant     Tenant?             @relation(fields: [tenantId], references: [id])
+  originNode MediaNode?          @relation(fields: [originNodeId], references: [id])
+  series     EventSeries?        @relation(fields: [seriesId], references: [id])
+  createdBy  User                @relation("StreamCreator", fields: [createdById], references: [id])
+  sessions   ViewerSession[]
+  messages   StreamChatMessage[]
+  recordings Recording[]
+  analytics  StreamAnalytic[]
+  mutes      StreamMute[]
+  cameras    StudioCamera[]
+  overlays   StudioOverlay[]
+  studio     StudioState?
+  invitations GuestInvitation[]
+  polls      LivePoll[]
+  reactions  LiveReaction[]
+  gifts      VirtualGift[]
+  audioTracks AudioTrack[]
+  subtitles  SubtitleTrack[]
+  aiJobs     AiJob[]
+  contentAssets ContentAsset[]
+  mediaJobs  MediaJob[]
+
+  @@index([status, scheduledAt])
+  @@index([tenantId, status])
+  @@index([originNodeId])
+  @@index([createdById])
+  @@index([eventType, status])
+}
+
+model ViewerSession {
+  id           String    @id @default(cuid())
+  streamId     String
+  sessionToken String    @unique
+  displayName  String?
+  email        String?
+  country      String?
+  city         String?
+  device       String?
+  deviceId     String?
+  browser      String?
+  os           String?
+  networkSpeed String?
+  ipHash       String?
+  fingerprint  String?
+  isReturning  Boolean   @default(false)
+  joinedAt     DateTime  @default(now())
+  leftAt       DateTime?
+  watchSeconds Int       @default(0)
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([streamId, leftAt])
+  @@index([streamId, fingerprint])
+  @@index([deviceId])
+}
+
+model StreamChatMessage {
+  id         String   @id @default(cuid())
+  streamId   String
+  sender     String
+  message    String
+  emoji      String?
+  gifUrl     String?
+  isPinned   Boolean  @default(false)
+  isAnnouncement Boolean @default(false)
+  isDeleted  Boolean  @default(false)
+  moderated  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([streamId, createdAt])
+  @@index([streamId, isDeleted])
+}
+
+model StreamMute {
+  id        String   @id @default(cuid())
+  streamId  String
+  userId    String?
+  nickname  String
+  reason    String?
+  banned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([streamId, nickname])
+}
+
+model Recording {
+  id           String    @id @default(cuid())
+  streamId     String
+  title        String
+  fileUrl      String
+  thumbnail    String?
+  previewUrl   String?
+  durationSec  Int       @default(0)
+  fileSizeMb   Float     @default(0)
+  isPublic     Boolean   @default(false)
+  passwordHash String?
+  shareToken   String?   @unique
+  expiresAt    DateTime?
+  trimStartSec Int?
+  trimEndSec   Int?
+  storageKey   String?
+  storageProvider String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  assets ContentAsset[]
+
+  @@index([streamId, createdAt])
+  @@index([expiresAt])
+}
+
+model StreamAnalytic {
+  id            String   @id @default(cuid())
+  streamId      String
+  metric        String
+  value         Float
+  dimension     String?
+  dimensionValue String?
+  recordedAt    DateTime @default(now())
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([streamId, metric, recordedAt])
+}
+
+// ─── Phase 2: Multi-tenant SaaS ─────────────────────────────────────────────
+
+model Tenant {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  customDomain   String?  @unique
+  logoUrl        String?
+  primaryColor   String   @default("#C9A14A")
+  themeJson      String?
+  planId         String?
+  billingEmail   String?
+  schemaKey      String?  /// logical schema / shard key
+  isActive       Boolean  @default(true)
+  usageMinutes   Int      @default(0)
+  usageBandwidthGb Float  @default(0)
+  /// Phase 3 white-label
+  emailTemplatesJson String?
+  smsTemplatesJson   String?
+  smtpConfigJson     String?
+  paymentConfigJson  String?
+  storageConfigJson  String?
+  cdnConfigJson      String?
+  watermarkText      String?
+  analyticsConfigJson String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  plan     SubscriptionPlan? @relation(fields: [planId], references: [id])
+  users    User[]
+  streams  Stream[]
+  packages TenantPackage[]
+  invitations GuestInvitation[]
+  leads    CrmLead[]
+  quotations CrmQuotation[]
+  contracts CrmContract[]
+}
+
+model SubscriptionPlan {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  monthlyPrice  Float
+  yearlyPrice   Float
+  maxStreams    Int      @default(5)
+  maxViewers    Int      @default(500)
+  maxStorageGb  Int      @default(100)
+  featuresJson  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenants Tenant[]
+}
+
+model TenantPackage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  price       Float
+  description String?
+  featuresJson String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ─── Phase 2: Guest invitations ─────────────────────────────────────────────
+
+model GuestInvitation {
+  id          String    @id @default(cuid())
+  streamId    String
+  tenantId    String?
+  name        String
+  email       String?
+  phone       String?
+  channel     String    /// EMAIL | SMS | WHATSAPP
+  token       String    @unique
+  status      String    @default("PENDING") /// PENDING | SENT | OPENED | JOINED | DECLINED
+  qrPayload   String?
+  sentAt      DateTime?
+  openedAt    DateTime?
+  joinedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  stream Stream  @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@index([streamId, status])
+  @@index([tenantId, status])
+}
+
+// ─── Phase 2: Multi-camera director studio ──────────────────────────────────
+
+model StudioCamera {
+  id           String   @id @default(cuid())
+  streamId     String
+  name         String
+  sourceType   String   /// OBS | RTMP | WEBRTC | PTZ | FILE
+  ingestUrl    String?
+  previewUrl   String?
+  isProgram    Boolean  @default(false)
+  isPreview    Boolean  @default(false)
+  ptzPan       Float    @default(0)
+  ptzTilt      Float    @default(0)
+  ptzZoom      Float    @default(1)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model StudioOverlay {
+  id        String   @id @default(cuid())
+  streamId  String
+  kind      String   /// LOGO | LOWER_THIRD | TICKER | COUNTDOWN | SCOREBOARD | SPONSOR | NAME_CARD | SLATE
+  label     String
+  payload   String   /// JSON
+  visible   Boolean  @default(false)
+  zIndex    Int      @default(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model StudioState {
+  id              String   @id @default(cuid())
+  streamId        String   @unique
+  programCameraId String?
+  previewCameraId String?
+  layout          String   @default("SINGLE") /// SINGLE | PIP | SPLIT | GRID
+  audioMaster     Float    @default(1)
+  micLevel        Float    @default(1)
+  musicLevel      Float    @default(0.5)
+  musicMuted      Boolean  @default(false)
+  emergencySlate  Boolean  @default(false)
+  aiDirectorOn    Boolean  @default(false)
+  sceneName       String?
+  updatedAt       DateTime @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+// ─── Phase 2: Viewer engagement ─────────────────────────────────────────────
+
+model LivePoll {
+  id        String   @id @default(cuid())
+  streamId  String
+  question  String
+  optionsJson String
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  votes  LivePollVote[]
+}
+
+model LivePollVote {
+  id        String   @id @default(cuid())
+  pollId    String
+  voterKey  String
+  optionIdx Int
+  createdAt DateTime @default(now())
+
+  poll LivePoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, voterKey])
+}
+
+model LiveReaction {
+  id        String   @id @default(cuid())
+  streamId  String
+  emoji     String
+  sender    String?
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model VirtualGift {
+  id        String   @id @default(cuid())
+  streamId  String
+  sender    String
+  giftCode  String
+  amountInr Float    @default(0)
+  createdAt DateTime @default(now())
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model ViewerBadge {
+  id        String   @id @default(cuid())
+  streamId  String?
+  nickname  String
+  level     String   @default("MEMBER") /// MEMBER | PREMIUM | VIP | MODERATOR
+  createdAt DateTime @default(now())
+
+  @@index([nickname])
+}
+
+// ─── Phase 2: Audio / subtitles / AI ────────────────────────────────────────
+
+model AudioTrack {
+  id        String   @id @default(cuid())
+  streamId  String
+  language  String   /// original | en | te | hi | ta | kn | ml
+  label     String
+  url       String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model SubtitleTrack {
+  id        String   @id @default(cuid())
+  streamId  String
+  language  String
+  format    String   @default("VTT")
+  content   String?
+  fileUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stream Stream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model AiJob {
+  id          String    @id @default(cuid())
+  streamId    String?
+  recordingId String?
+  type        String    /// DIRECTOR | HIGHLIGHT | STT | FACE_TRACK | REEL
+  status      String    @default("QUEUED") /// QUEUED | RUNNING | DONE | FAILED
+  inputJson   String?
+  outputJson  String?
+  error       String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  stream Stream? @relation(fields: [streamId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([streamId, type])
+}
+
+model ContentAsset {
+  id          String   @id @default(cuid())
+  streamId    String?
+  recordingId String?
+  tenantId    String?
+  title       String
+  category    String?
+  tags        String?
+  collection  String?
+  playlist    String?
+  fileUrl     String
+  thumbnail   String?
+  durationSec Int      @default(0)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stream    Stream?    @relation(fields: [streamId], references: [id], onDelete: SetNull)
+  recording Recording? @relation(fields: [recordingId], references: [id], onDelete: SetNull)
+  favourites ContentFavourite[]
+}
+
+model ContentFavourite {
+  id        String   @id @default(cuid())
+  userId    String
+  assetId   String
+  createdAt DateTime @default(now())
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset ContentAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assetId])
+}
+
+model OpsAlert {
+  id        String   @id @default(cuid())
+  severity  String   @default("INFO")
+  source    String
+  message   String
+  channel   String   /// SLACK | EMAIL | SMS | IN_APP
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ─── Phase 3: Global cluster / edge ─────────────────────────────────────────
+
+model MediaNode {
+  id              String    @id @default(cuid())
+  name            String
+  role            String    /// ORIGIN | EDGE
+  region          String    /// IN | SG | AE | GB | DE | US | AU
+  city            String?
+  rtmpUrl         String
+  hlsBaseUrl      String
+  webrtcBaseUrl   String?
+  apiUrl          String?
+  status          String    @default("HEALTHY") /// HEALTHY | DEGRADED | DRAINING | DOWN
+  cpuPercent      Float     @default(0)
+  bandwidthMbps   Float     @default(0)
+  activeStreams   Int       @default(0)
+  activeViewers   Int       @default(0)
+  maxStreams      Int       @default(50)
+  maxViewers      Int       @default(20000)
+  latitude        Float?
+  longitude       Float?
+  lastHealthAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  streams Stream[]
+
+  @@index([role, status, region])
+  @@index([status, cpuPercent])
+}
+
+model ScalingPolicy {
+  id                String   @id @default(cuid())
+  name              String   @default("default")
+  cpuThreshold      Float    @default(70)
+  bandwidthMbpsMax  Float    @default(5000)
+  viewersPerNodeMax Int      @default(15000)
+  cooldownSec       Int      @default(300)
+  minNodes          Int      @default(1)
+  maxNodes          Int      @default(20)
+  isActive          Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+}
+
+model MediaJob {
+  id          String    @id @default(cuid())
+  streamId    String?
+  recordingId String?
+  type        String    /// TRANSCODE | THUMBNAILS | PREVIEW | POSTER | WAVEFORM | ABR_HLS
+  status      String    @default("QUEUED")
+  inputJson   String?
+  outputJson  String?
+  workerId    String?
+  error       String?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  stream Stream? @relation(fields: [streamId], references: [id], onDelete: Cascade)
+}
+
+model EventSeries {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  title       String
+  eventType   String
+  description String?
+  rrule       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  streams Stream[]
+}
+
+model EventTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  name        String
+  eventType   String
+  payloadJson String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CrmLead {
+  id          String    @id @default(cuid())
+  tenantId    String?
+  customerId  String?
+  name        String
+  email       String?
+  phone       String?
+  source      String?
+  stage       String    @default("NEW") /// NEW | QUALIFIED | PROPOSAL | WON | LOST
+  valueInr    Float     @default(0)
+  notes       String?
+  followUpAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+}
+
+model CrmQuotation {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  leadId      String?
+  title       String
+  amountInr   Float
+  currency    String   @default("INR")
+  status      String   @default("DRAFT")
+  pdfUrl      String?
+  validUntil  DateTime?
+  lineItemsJson String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+}
+
+model CrmContract {
+  id          String    @id @default(cuid())
+  tenantId    String?
+  title       String
+  partyName   String
+  status      String    @default("DRAFT")
+  fileUrl     String?
+  signedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String?
+  platform  String   /// IOS | ANDROID | TV_ANDROID | TV_APPLE | TV_FIRE | TV_TIZEN | TV_WEBOS
+  token     String
+  deviceId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, token])
+}
+
+model ScheduledReport {
+  id          String   @id @default(cuid())
+  name        String
+  cron        String
+  format      String   @default("PDF") /// PDF | XLSX
+  recipients  String
+  lastRunAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Dynamic event theme — loaded by streaming page (no hardcoded assets)
+model EventTheme {
+  id                  String   @id @default(cuid())
+  name                String
+  slug                String   @unique
+  category            String
+  description         String?
+  previewImage        String?
+  desktopBackground   String?
+  tabletBackground    String?
+  mobileBackground    String?
+  landscapeBackground String?
+  portraitBackground  String?
+  waitingBackground   String?
+  liveBackground      String?
+  popupBackground     String?
+  loginBackground     String?
+  chatBackground      String?
+  overlayImage        String?
+  frameImage          String?
+  particles           String?
+  primaryColor        String   @default("#F7B733")
+  secondaryColor      String   @default("#FF8A00")
+  accentColor         String   @default("#F7B733")
+  backgroundColor     String   @default("#080808")
+  cardColor           String   @default("#161616")
+  glassColor          String   @default("rgba(22,22,22,0.85)")
+  buttonColor         String   @default("#F7B733")
+  textColor           String   @default("#FFFFFF")
+  borderColor         String   @default("rgba(255,255,255,0.08)")
+  glowColor           String   @default("rgba(247,183,51,0.25)")
+  gradientColors      String?  /// JSON string[]
+  fontHeading         String   @default("Space Grotesk")
+  fontBody            String   @default("Outfit")
+  fontButton          String?
+  fontCountdown       String?
+  customFontsJson     String?  /// JSON {name,url}[]
+  animationType       String   @default("none")
+  animationSpeed      Float    @default(1)
+  animationDensity    Float    @default(1)
+  animationOpacity    Float    @default(0.6)
+  layersJson          String?  /// JSON ThemeLayer[]
+  musicUrl            String?
+  logoUrl             String?
+  watermarkUrl        String?
+  status              String   @default("DRAFT") /// DRAFT | PUBLISHED | ARCHIVED
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  assets ThemeAsset[]
+
+  @@index([category, status])
+  @@index([status, updatedAt])
+}
+
+model ThemeAsset {
+  id        String   @id @default(cuid())
+  themeId   String
+  assetType String
+  assetPath String
+  label     String?
+  positionX Float    @default(0)
+  positionY Float    @default(0)
+  opacity   Float    @default(1)
+  blendMode String   @default("normal")
+  scale     Float    @default(1)
+  blur      Float    @default(0)
+  visible   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  metaJson  String?  /// { fileSize, width, height, mime }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theme EventTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId, sortOrder])
+  @@index([themeId, assetType])
+}

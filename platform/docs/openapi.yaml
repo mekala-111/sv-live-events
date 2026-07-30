@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: SV Live Events API
+  version: 1.0.0
+  description: |
+    Public REST surface under `/api/*`. Breaking changes will ship as `/api/v2/*`.
+    This document is a contract index — existing route behaviour is unchanged.
+servers:
+  - url: http://localhost:5001/api
+paths:
+  /health:
+    get:
+      summary: Liveness
+      responses:
+        '200':
+          description: OK
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: text/plain exposition
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Tokens + user
+  /stream/verify-password/{slug}:
+    post:
+      summary: Unlock private stream playback
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: playbackToken + stream
+  /stream/viewer/count/{slug}:
+    get:
+      summary: Concurrent viewer counters
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: currentViewers, peakViewers, status
+  /edge/resolve:
+    get:
+      summary: Nearest edge + origin failover
+      parameters:
+        - in: query
+          name: country
+          schema: { type: string }
+        - in: query
+          name: slug
+          schema: { type: string }
+      responses:
+        '200':
+          description: Edge/origin playback hints
+  /cluster/nodes:
+    get:
+      summary: Media cluster nodes
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: ORIGIN/EDGE inventory
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

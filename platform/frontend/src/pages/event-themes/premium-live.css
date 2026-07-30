@@ -1,0 +1,825 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,600&family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600&display=swap');
+
+.plx {
+  --plx-accent: #c9a24d;
+  --plx-accent2: #e8c4a8;
+  --plx-glow: rgba(201, 162, 77, 0.45);
+  --plx-bg: #070605;
+  --plx-surface: rgba(20, 16, 12, 0.72);
+  --plx-text: #f7f0e4;
+  --plx-muted: rgba(247, 240, 228, 0.55);
+  --plx-border: rgba(201, 162, 77, 0.35);
+  --plx-hero: linear-gradient(180deg, #070605, #120e0a);
+
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--plx-text);
+  background: var(--plx-bg);
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.plx-font-cinzel .plx-title,
+.plx-font-cinzel .plx-countdown strong {
+  font-family: 'Cinzel', serif;
+}
+
+.plx-font-playfair .plx-title,
+.plx-font-playfair .plx-countdown strong {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+}
+
+.plx-font-cormorant .plx-title,
+.plx-font-cormorant .plx-countdown strong {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+}
+
+.plx-font-space .plx-title {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: clamp(1.1rem, 2.5vw, 1.75rem);
+}
+
+.plx-hero-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--plx-hero);
+  pointer-events: none;
+}
+
+.plx-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.plx-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  background: var(--plx-bg);
+}
+
+.plx-loader-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--plx-accent);
+  border-right-color: var(--plx-accent2);
+  animation: plx-spin 0.9s linear infinite;
+  box-shadow: 0 0 24px var(--plx-glow);
+}
+
+.plx-loader p {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.plx-loader span {
+  color: var(--plx-muted);
+  font-size: 0.8rem;
+}
+
+@keyframes plx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Particles */
+.plx-particles {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.plx-particle {
+  position: absolute;
+  left: calc(var(--i) * 5.5%);
+  top: -10%;
+  width: 8px;
+  height: 8px;
+  opacity: 0.55;
+  animation: plx-fall calc(9s + var(--i) * 0.35s) linear infinite;
+  animation-delay: calc(var(--i) * -0.4s);
+}
+
+.plx-particles--petals .plx-particle {
+  width: 12px;
+  height: 10px;
+  border-radius: 60% 40% 60% 40%;
+  background: linear-gradient(135deg, var(--plx-accent2), var(--plx-accent));
+  filter: blur(0.2px);
+}
+
+.plx-particles--confetti .plx-particle {
+  width: 6px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--plx-accent);
+  transform: rotate(20deg);
+}
+
+.plx-particles--confetti .plx-particle:nth-child(odd) {
+  background: var(--plx-accent2);
+}
+
+.plx-particles--stars .plx-particle {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px var(--plx-glow);
+}
+
+.plx-particles--sparks .plx-particle {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--plx-accent);
+  box-shadow: 0 0 12px var(--plx-glow);
+}
+
+.plx-particles--dots .plx-particle {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--plx-accent);
+  opacity: 0.35;
+}
+
+.plx-particles--orbs .plx-particle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff8, var(--plx-accent));
+  filter: blur(1px);
+  opacity: 0.35;
+}
+
+@keyframes plx-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(110vh) rotate(240deg);
+    opacity: 0;
+  }
+}
+
+.plx-top,
+.plx-main,
+.plx-footer,
+.plx-ticker {
+  position: relative;
+  z-index: 5;
+}
+
+.plx-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.plx-top-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+
+.plx-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.plx-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #666;
+}
+
+.plx-live.is-on {
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+}
+
+.plx-live.is-on i {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+  animation: plx-pulse 1.4s ease infinite;
+}
+
+@keyframes plx-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.plx-cat {
+  font-size: 0.75rem;
+  color: var(--plx-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plx-title {
+  width: 100%;
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.6rem, 4vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.15;
+  background: linear-gradient(120deg, var(--plx-text), var(--plx-accent2), var(--plx-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.plx-top-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.plx-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--plx-text);
+}
+
+.plx-stat--muted {
+  color: var(--plx-muted);
+}
+
+.plx-ticker {
+  overflow: hidden;
+  white-space: nowrap;
+  border-block: 1px solid var(--plx-border);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.55rem 0;
+  margin-top: 0.5rem;
+}
+
+.plx-ticker span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: plx-marquee 18s linear infinite;
+  color: var(--plx-accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.plx-ticker span + span {
+  animation-delay: -9s;
+}
+
+@keyframes plx-marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.plx-main {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .plx-main {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+
+.plx-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plx-countdown {
+  text-align: center;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.plx-countdown-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--plx-muted);
+  margin-bottom: 0.75rem;
+}
+
+.plx-countdown-grid {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.plx-cd-cell {
+  min-width: 64px;
+  padding: 0.65rem 0.5rem;
+  border-radius: 14px;
+  background: var(--plx-surface);
+  border: 1px solid var(--plx-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 24px var(--plx-glow);
+}
+
+.plx-cd-cell strong {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--plx-accent);
+  text-shadow: 0 0 18px var(--plx-glow);
+}
+
+.plx-cd-cell span {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--plx-muted);
+}
+
+.plx-player-frame {
+  position: relative;
+  padding: 3px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--plx-accent), transparent 40%, var(--plx-accent2), var(--plx-accent));
+  background-size: 200% 200%;
+  animation: plx-border-shine 6s ease infinite;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 40px var(--plx-glow);
+}
+
+@keyframes plx-border-shine {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.plx-player-glow {
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  background: radial-gradient(circle, var(--plx-glow), transparent 60%);
+  opacity: 0.5;
+  filter: blur(20px);
+}
+
+.plx-player-inner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #000;
+}
+
+.plx-yt {
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+
+.plx-player-empty {
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  color: var(--plx-muted);
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.06), transparent 55%);
+}
+
+.plx-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--plx-accent);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.plx-corner--tl {
+  top: 10px;
+  left: 10px;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 4px 0 0 0;
+}
+
+.plx-corner--tr {
+  top: 10px;
+  right: 10px;
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 0 4px 0 0;
+}
+
+.plx-corner--bl {
+  bottom: 10px;
+  left: 10px;
+  border-right: 0;
+  border-top: 0;
+  border-radius: 0 0 0 4px;
+}
+
+.plx-corner--br {
+  bottom: 10px;
+  right: 10px;
+  border-left: 0;
+  border-top: 0;
+  border-radius: 0 0 4px 0;
+}
+
+.glass {
+  background: var(--plx-surface);
+  border: 1px solid var(--plx-border);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.plx-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+}
+
+.plx-info-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--plx-muted);
+  margin: 0 0 0.25rem;
+}
+
+.plx-info-value {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.plx-desc {
+  margin: 0;
+  color: var(--plx-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.plx-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.plx-react {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid var(--plx-border);
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.plx-react:hover {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 8px 24px var(--plx-glow);
+  border-color: var(--plx-accent);
+}
+
+.plx-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plx-chat {
+  display: flex;
+  flex-direction: column;
+  height: min(520px, 70vh);
+  overflow: hidden;
+}
+
+.plx-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--plx-border);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--plx-accent);
+}
+
+.plx-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.plx-chat-empty {
+  margin: auto;
+  text-align: center;
+  color: var(--plx-muted);
+  font-size: 0.85rem;
+}
+
+.plx-bubble {
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px 14px 14px 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.plx-bubble.is-announcement {
+  border-color: var(--plx-border);
+  background: color-mix(in srgb, var(--plx-accent) 12%, transparent);
+}
+
+.plx-bubble-name {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--plx-accent);
+  margin-bottom: 0.15rem;
+}
+
+.plx-bubble p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.plx-chat-error {
+  margin: 0 0.85rem;
+  font-size: 0.75rem;
+  color: #fca5a5;
+}
+
+.plx-chat-form {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--plx-border);
+}
+
+.plx-chat-input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.plx-input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--plx-border);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--plx-text);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.plx-input:focus {
+  border-color: var(--plx-accent);
+  box-shadow: 0 0 0 3px var(--plx-glow);
+}
+
+.plx-emoji-pop {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 12px;
+  background: #111;
+  border: 1px solid var(--plx-border);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.plx-emoji-pop button {
+  background: transparent;
+  border: 0;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+.plx-icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--plx-border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--plx-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.plx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.plx-btn:hover {
+  transform: translateY(-1px);
+}
+
+.plx-btn--primary {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--plx-accent), var(--plx-accent2));
+  color: #0a0a0a;
+  box-shadow: 0 8px 24px var(--plx-glow);
+}
+
+.plx-btn--primary:hover {
+  box-shadow: 0 12px 32px var(--plx-glow);
+}
+
+.plx-btn--ghost {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--plx-border);
+  color: var(--plx-text);
+}
+
+.plx-btn--ghost:hover {
+  border-color: var(--plx-accent);
+  box-shadow: 0 0 20px var(--plx-glow);
+}
+
+.plx-gifts {
+  padding-bottom: 0.85rem;
+}
+
+.plx-gift-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  padding: 0.85rem;
+}
+
+.plx-gift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 14px;
+  border: 1px solid var(--plx-border);
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.plx-gift:hover,
+.plx-gift.is-pulse {
+  transform: translateY(-2px) scale(1.03);
+  border-color: var(--plx-accent);
+  box-shadow: 0 10px 28px var(--plx-glow);
+}
+
+.plx-gift-icon {
+  font-size: 1.4rem;
+}
+
+.plx-gift-label {
+  font-size: 0.65rem;
+  text-align: center;
+  color: var(--plx-muted);
+}
+
+.plx-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.plx-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.5rem 1.5rem 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  border-top: 1px solid var(--plx-border);
+  color: var(--plx-muted);
+  font-size: 0.8rem;
+}
+
+.plx-footer span {
+  color: var(--plx-accent);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plx-float-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  overflow: hidden;
+}
+
+.plx-float {
+  position: absolute;
+  bottom: 18%;
+  right: 12%;
+  font-size: 1.8rem;
+  animation: plx-float-up 2.2s ease-out forwards;
+}
+
+@keyframes plx-float-up {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-220px) translateX(-40px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .plx-top {
+    padding: 1rem;
+  }
+  .plx-main {
+    padding: 1rem;
+  }
+  .plx-chat {
+    height: 420px;
+  }
+  .plx-cd-cell {
+    min-width: 52px;
+  }
+}

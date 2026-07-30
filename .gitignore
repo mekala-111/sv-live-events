@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.next
+out
+build
+*.local
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.local.example
+
+# Databases
+*.db
+*.db-journal
+prisma/prod.db
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vercel
+
+# Uploads / caches
+platform/backend/uploads
+platform/frontend/dist

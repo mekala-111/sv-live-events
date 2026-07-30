@@ -1,0 +1,27 @@
+groups:
+  - name: svlive
+    rules:
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: API p95 latency above 100ms target
+      - alert: NodeDown
+        expr: up{job="svlive-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: SV Live API scrape target down
+      - alert: HighViewerPressure
+        expr: svlive_current_viewers > 80000
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: Approaching 100k concurrent viewer scale band
+      - alert: OriginDrainingOnly
+        expr: count(svlive_live_streams) > 0 and count(up) == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: Live streams without healthy scrape targets

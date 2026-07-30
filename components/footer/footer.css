@@ -1,0 +1,19 @@
+.footer-noise {
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.footer-icon-box {
+  box-shadow: 0 0 16px rgba(253, 181, 21, 0.22);
+}
+
+.footer-link:hover .footer-chevron {
+  transform: translateX(3px);
+}
+
+.footer-social:hover {
+  border-color: rgba(253, 181, 21, 0.55);
+  color: #fdb515;
+  box-shadow: 0 0 20px rgba(253, 181, 21, 0.2);
+}

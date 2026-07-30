@@ -1,0 +1,74 @@
+@keyframes contact-particle {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  18% {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-110px) scale(0.35);
+  }
+}
+
+@keyframes contact-gold-shift {
+  0%,
+  to {
+    background-position: 0%;
+  }
+  50% {
+    background-position: 100%;
+  }
+}
+
+.contact-gold-text {
+  background: linear-gradient(100deg, #ffe9a8, #fdb515, #ff8a00, #ffc14d, #fdb515) 0 0 / 220%;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: 5.5s ease-in-out infinite contact-gold-shift;
+  filter: drop-shadow(0 0 18px rgba(253, 181, 21, 0.35));
+}
+
+.contact-noise {
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.contact-particle {
+  pointer-events: none;
+  border-radius: 9999px;
+  width: 3px;
+  height: 3px;
+  animation: linear infinite contact-particle;
+  position: absolute;
+}
+
+.contact-glass {
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(8, 8, 8, 0.78) 45%, rgba(5, 5, 5, 0.88));
+  border: 1px solid rgba(253, 181, 21, 0.38);
+  box-shadow:
+    0 22px 55px rgba(0, 0, 0, 0.55),
+    inset 0 1px rgba(255, 255, 255, 0.12),
+    0 0 36px rgba(253, 181, 21, 0.1);
+}
+
+.contact-glass:hover {
+  border-color: rgba(253, 181, 21, 0.55);
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px rgba(255, 255, 255, 0.14),
+    0 0 48px rgba(255, 138, 0, 0.18);
+}
+
+.contact-icon-ring {
+  box-shadow: 0 0 18px rgba(253, 181, 21, 0.28);
+}
+
+.contact-arrow {
+  box-shadow: 0 0 16px rgba(253, 181, 21, 0.25);
+}

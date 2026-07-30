@@ -1,0 +1,19 @@
+module.exports = {
+  apps: [
+    {
+      name: 'svlive-api',
+      cwd: './backend',
+      script: 'dist/server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 5001,
+      },
+      max_memory_restart: '512M',
+      error_file: './logs/api-error.log',
+      out_file: './logs/api-out.log',
+      time: true,
+    },
+  ],
+};

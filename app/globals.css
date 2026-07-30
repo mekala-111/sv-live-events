@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050505;
+  --card: #111111;
+  --foreground: #ffffff;
+  --muted: #a0a0a0;
+  --primary: #ff6b00;
+  --secondary: #ff9500;
+  --border: rgba(255, 255, 255, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-space-grotesk);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 107, 0, 0.18), transparent 26%),
+    radial-gradient(circle at top right, rgba(255, 149, 0, 0.16), transparent 24%),
+    linear-gradient(180deg, #0b0b0b 0%, #050505 18%, #050505 100%);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*::selection {
+  background: rgba(255, 107, 0, 0.32);
+  color: #fff;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(17, 17, 17, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mask-fade-bottom {
+  mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.nav-link-active {
+  color: #fff;
+  position: relative;
+}
+
+.nav-link-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fdb515, #ff8a00);
+  box-shadow: 0 0 12px rgba(253, 181, 21, 0.7);
+}
