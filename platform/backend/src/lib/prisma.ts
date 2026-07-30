@@ -47,25 +47,22 @@ function createClient(url?: string) {
 
 const dbUrl = resolveDatabaseUrl();
 
-function getPrisma() {
-  const existing = globalForPrisma.prisma
+function getPrisma(): PrismaClient {
+  const existing = globalForPrisma.prisma;
   // Invalidate cached client after `prisma generate` adds models (tsx keeps globalThis)
-  if (existing && typeof (existing as { eventTheme?: unknown }).eventTheme?.findMany === 'function') {
-    return existing
-  }
+  if (existing && 'eventTheme' in existing) return existing;
   if (existing) {
-    void existing.$disconnect().catch(() => undefined)
+    void existing.$disconnect().catch(() => undefined);
   }
-  const client = createClient(dbUrl)
-  globalForPrisma.prisma = client
-  return client
+  const client = createClient(dbUrl);
+  globalForPrisma.prisma = client;
+  return client;
 }
 
 export const prisma = getPrisma();
 
 export const prismaRead =
-  globalForPrisma.prismaRead &&
-  typeof (globalForPrisma.prismaRead as { eventTheme?: unknown }).eventTheme?.findMany === 'function'
+  globalForPrisma.prismaRead && 'eventTheme' in globalForPrisma.prismaRead
     ? globalForPrisma.prismaRead
     : process.env.DATABASE_READ_URL
       ? createClient(process.env.DATABASE_READ_URL)
