@@ -26,6 +26,10 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 export function statusBadge(status: string) {
+  const key = status
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
   const map: Record<string, VariantProps<typeof badgeVariants>['variant']> = {
     Confirmed: 'success',
     Completed: 'info',
@@ -35,5 +39,5 @@ export function statusBadge(status: string) {
     'In Progress': 'gold',
     Cancelled: 'danger',
   }
-  return map[status] ?? 'default'
+  return map[key] ?? 'default'
 }

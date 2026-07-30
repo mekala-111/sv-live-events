@@ -1,40 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { copyFileSync, existsSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { logger } from './logger.js';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   prismaRead: PrismaClient | undefined;
-  sqliteReady: boolean | undefined;
 };
-
-/** On Vercel, SQLite must live under /tmp (read-only deploy FS). Seed from bundled prisma/dev.db. */
-function resolveDatabaseUrl(): string | undefined {
-  const configured = process.env.DATABASE_URL;
-  if (!process.env.VERCEL) return configured;
-
-  const tmpDb = '/tmp/sv-live-dev.db';
-  if (!globalForPrisma.sqliteReady) {
-    try {
-      const here = path.dirname(fileURLToPath(import.meta.url));
-      const candidates = [
-        path.resolve(here, '../../prisma/dev.db'),
-        path.resolve(process.cwd(), 'prisma/dev.db'),
-      ];
-      const seed = candidates.find((p) => existsSync(p));
-      if (seed && !existsSync(tmpDb)) {
-        copyFileSync(seed, tmpDb);
-        logger.info(`SQLite seeded to ${tmpDb} from ${seed}`);
-      }
-      globalForPrisma.sqliteReady = true;
-    } catch (err) {
-      logger.warn(`SQLite seed copy failed: ${(err as Error).message}`);
-    }
-  }
-  return `file:${tmpDb}`;
-}
 
 function createClient(url?: string) {
   const datasources = url ? { db: { url } } : undefined;
@@ -44,7 +14,10 @@ function createClient(url?: string) {
   });
 }
 
-const dbUrl = resolveDatabaseUrl();
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl?.startsWith('mysql://') && !dbUrl?.startsWith('mysql2://')) {
+  throw new Error('DATABASE_URL must be a MySQL connection string, for example mysql://user:password@host:3306/database');
+}
 
 export const prisma = globalForPrisma.prisma ?? createClient(dbUrl);
 

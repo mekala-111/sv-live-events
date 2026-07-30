@@ -16,6 +16,7 @@ import { EngagePanel } from '@/components/stream/EngagePanel'
 import { CreamTheme } from '@/pages/event-themes/Theme1'
 import { isCreamTheme } from '@/pages/event-themes/creamThemes'
 import { DynamicThemeShell } from '@/features/theme/DynamicThemeShell'
+import { toWhatsAppHref } from '@/lib/whatsapp'
 
 interface StreamInfo {
   id: string
@@ -642,7 +643,7 @@ export default function LiveEventPage() {
               ) : null}
               {stream.whatsappNumber ? (
                 <a
-                  href={`https://wa.me/91${stream.whatsappNumber}`}
+                  href={toWhatsAppHref(stream.whatsappNumber)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm text-white/80 hover:bg-white/5"

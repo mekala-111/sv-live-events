@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { validate } from '../middleware/validate.js';
@@ -95,9 +96,21 @@ function safeJson(raw: string) {
   }
 }
 
-function toDb(body: z.infer<typeof themeBody>) {
+function toDb<T extends Partial<z.infer<typeof themeBody>>>(body: T) {
   const { assets: _a, ...rest } = body;
   return rest;
+}
+
+function themeWriteError(err: unknown) {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2000') {
+      return new AppError('Theme data is too large for the database. Run prisma db push to apply the latest theme column sizes.', 400);
+    }
+    if (err.code === 'P2002') {
+      return new AppError('Slug already in use', 409);
+    }
+  }
+  return err;
 }
 
 /** Public — published themes for streaming page */
@@ -207,11 +220,11 @@ router.post('/', validate(themeBody), async (req, res, next) => {
     });
     res.status(201).json({ success: true, data: serializeTheme(theme) });
   } catch (err) {
-    next(err);
+    next(themeWriteError(err));
   }
 });
 
-router.put('/:id', validate(themeBody.partial().extend({ name: z.string().min(2).optional(), slug: z.string().min(2).optional() })), async (req, res, next) => {
+router.put('/:id', validate(themeBody.partial().extend({ name: z.string().min(2).optional(), slug: z.string().min(2).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional() })), async (req, res, next) => {
   try {
     const id = param(req.params.id);
     const existing = await prisma.eventTheme.findUnique({ where: { id } });
@@ -230,7 +243,7 @@ router.put('/:id', validate(themeBody.partial().extend({ name: z.string().min(2)
     const theme = await prisma.eventTheme.update({
       where: { id },
       data: {
-        ...toDb(body as z.infer<typeof themeBody>),
+        ...toDb(body),
         ...(body.assets
           ? {
               assets: {
@@ -256,7 +269,7 @@ router.put('/:id', validate(themeBody.partial().extend({ name: z.string().min(2)
     });
     res.json({ success: true, data: serializeTheme(theme) });
   } catch (err) {
-    next(err);
+    next(themeWriteError(err));
   }
 });
 
@@ -270,7 +283,7 @@ router.patch('/:id/status', async (req, res, next) => {
     });
     res.json({ success: true, data: serializeTheme(theme) });
   } catch (err) {
-    next(err);
+    next(themeWriteError(err));
   }
 });
 
@@ -319,7 +332,7 @@ router.post('/:id/duplicate', async (req, res, next) => {
     });
     res.status(201).json({ success: true, data: serializeTheme(theme) });
   } catch (err) {
-    next(err);
+    next(themeWriteError(err));
   }
 });
 

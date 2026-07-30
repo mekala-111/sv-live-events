@@ -1,69 +1,57 @@
 import { z } from 'zod'
 
-export const eventSchema = z
-  .object({
-    name: z.string().min(3, 'Event name must be at least 3 characters'),
-    slug: z
-      .string()
-      .min(3, 'Slug is required')
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use lowercase letters, numbers, and hyphens'),
-    category: z.string().min(1, 'Category is required'),
-    subCategory: z.string().min(1, 'Sub category is required'),
-    themeId: z.string().min(1),
-    language: z.string().min(1),
-    status: z.enum(['draft', 'published', 'scheduled', 'archived']),
-    privacy: z.enum(['public', 'private', 'unlisted']),
-    bookingEnabled: z.boolean(),
-    startDate: z.string().min(1, 'Start date is required'),
-    endDate: z.string().min(1, 'End date is required'),
-    countdownTitle: z.string(),
-    timezone: z.string().min(1),
-    streamType: z.enum(['rtmp', 'webrtc', 'external']),
-    streamVisibility: z.enum(['public', 'private', 'unlisted']),
-    rtmpUrl: z.string(),
-    streamKey: z.string(),
-    backupStreamUrl: z.string(),
-    videoQuality: z.string(),
-    latency: z.string(),
-    enableDvr: z.boolean(),
-    autoRecording: z.boolean(),
-    viewerLimit: z.coerce.number().min(0).max(1_000_000),
-    assets: z.record(z.string().nullable()),
-    description: z.string(),
-    shortDescription: z.string().max(280, 'Keep under 280 characters'),
-    agenda: z.string(),
-    speakers: z.string(),
-    venue: z.string(),
-    mapEmbed: z.string(),
-    address: z.string(),
-    organizer: z.string(),
-    sponsors: z.string(),
-    socials: z.record(z.string()),
-    features: z.record(z.boolean()),
-    guestPassword: z.string(),
-    vipPassword: z.string(),
-    invitationLink: z.string().url('Must be a valid URL').or(z.literal('')),
-    registrationRequired: z.boolean(),
-    registrationFields: z.array(
-      z.object({
-        id: z.string(),
-        label: z.string().min(1),
-        type: z.enum(['text', 'email', 'phone', 'select', 'textarea']),
-        required: z.boolean(),
-        options: z.array(z.string()).optional(),
-      }),
-    ),
-    seoTitle: z.string().max(70, 'Keep under 70 characters'),
-    metaDescription: z.string().max(160, 'Keep under 160 characters'),
-    keywords: z.array(z.string()),
-    ogTitle: z.string(),
-    ogDescription: z.string(),
-    twitterCard: z.string(),
-    canonicalUrl: z.string(),
-  })
-  .refine((d) => !d.startDate || !d.endDate || new Date(d.endDate) >= new Date(d.startDate), {
-    message: 'End date must be after start date',
-    path: ['endDate'],
-  })
+const youtubeUrl = z
+  .string()
+  .trim()
+  .refine(
+    (value) => {
+      if (!value) return true
+      try {
+        const url = new URL(value)
+        const host = url.hostname.replace(/^www\./, '')
+        return host === 'youtu.be' || host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')
+      } catch {
+        return false
+      }
+    },
+    'Enter a valid YouTube URL',
+  )
+
+export const eventSchema = z.object({
+  serviceType: z.literal('youtube'),
+  eventDate: z.string().min(1, 'Event date is required'),
+  category: z.string().min(1, 'Event type is required'),
+  themeId: z.string().min(1, 'Design is required'),
+  websiteDesignId: z.string().min(1, 'Website design is required'),
+  name: z.string().min(3, 'Page title is required').max(80, 'Keep under 80 characters'),
+  slug: z
+    .string()
+    .min(3, 'Domain name is required')
+    .max(48, 'Keep under 48 characters')
+    .regex(/^[a-z0-9]+$/, 'Use lowercase letters and numbers only, no spaces'),
+  rememberChoice: z.boolean(),
+  liveTimings: z.string().max(160, 'Keep under 160 characters'),
+  bookingEnabled: z.boolean(),
+  youtubeChannel: z.string(),
+  youtubeLiveUrl: youtubeUrl,
+  youtubeLiveKey: z.string().max(200, 'Keep under 200 characters'),
+  teaserUrl: youtubeUrl,
+  scrollMessage: z.string().max(140, 'Keep under 140 characters'),
+  eventImages: z.array(z.string()).max(10, 'Maximum 10 images'),
+  logo: z.string().nullable(),
+  customImage: z.string().nullable(),
+  whatsappImage: z.string().nullable(),
+  watchLiveButton: z.boolean(),
+  socialShare: z.boolean(),
+  whatsappNumber: z
+    .string()
+    .trim()
+    .regex(/^\+?[1-9]\d{7,14}$|^$/, 'Enter a valid WhatsApp number with country code'),
+  remarks1: z.string().max(500, 'Keep under 500 characters'),
+  remarks2: z.string().max(500, 'Keep under 500 characters'),
+  fontStyle: z.string().min(1, 'Choose a font'),
+  fontColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Use a valid hex color'),
+  pin: z.string().regex(/^\d{4,8}$/, 'PIN must be 4 to 8 digits'),
+})
 
 export type EventSchema = z.infer<typeof eventSchema>

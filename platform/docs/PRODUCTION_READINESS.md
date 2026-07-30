@@ -47,7 +47,7 @@
 | Error boundary + skip link | Applied |
 | Compression + Prometheus gauges | Applied |
 
-**Targets vs current lab:** 100k viewers / 5k streams require real edge CDN + horizontal API (not single-host SQLite). Lab harnesses: `deploy/load-test-viewers.sh`, chaos drain script.
+**Targets vs current lab:** 100k viewers / 5k streams require real edge CDN + horizontal API. Lab harnesses: `deploy/load-test-viewers.sh`, chaos drain script.
 
 ---
 
@@ -58,7 +58,7 @@
 - **DB:** Indexes + `DATABASE_READ_URL` + pooler URL hints  
 - **Frontend:** Lazy admin chunks reduce initial JS  
 
-**Bottleneck at extreme scale:** SQLite → migrate `DATABASE_URL` to MySQL 8 (compose already present).
+**Bottleneck at extreme scale:** MySQL must run with pooling/read replicas and tuned indexes for sustained peak traffic.
 
 ---
 

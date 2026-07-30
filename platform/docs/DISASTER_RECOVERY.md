@@ -4,7 +4,7 @@
 
 | Component | RPO | RTO |
 |-----------|-----|-----|
-| MySQL / SQLite app DB | 15 min (incremental) | 1 h |
+| MySQL app DB | 15 min (incremental) | 1 h |
 | Recordings (object storage) | Near-zero (replicate) | 30 min |
 | SRS origins | N/A (stateless + DVR) | 5 min (failover edge) |
 
@@ -14,12 +14,12 @@
 ./platform/deploy/backup.sh
 ```
 
-Store artefacts off-box (S3/R2). Enable MySQL binlog for PITR when on MySQL.
+Store artefacts off-box (S3/R2). Enable MySQL binlog for PITR.
 
 ## Database snapshots
 
 1. Stop writes (maintenance window) or use consistent snapshot.
-2. `mysqldump --single-transaction` or copy `prisma/dev.db`.
+2. `mysqldump --single-transaction`.
 3. Verify restore on staging monthly.
 
 ## Recording replication

@@ -109,7 +109,7 @@ router.get('/ops/extended', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'ST
         },
         infra: {
           redisConfigured: redisOk,
-          mysqlOrSqlite: process.env.DATABASE_URL?.includes('mysql') ? 'mysql' : 'sqlite',
+          database: 'mysql',
           docker: Boolean(process.env.IN_DOCKER),
         },
         alerts,

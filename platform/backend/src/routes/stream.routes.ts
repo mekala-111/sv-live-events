@@ -257,14 +257,26 @@ router.patch('/events/:id', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN', 'ST
 
     if (body.portal) {
       const portal = body.portal;
-      const socials = (portal.socials || {}) as Record<string, string>;
       const merged = {
         ...prev,
         portal,
-        designId: (portal.themeId as string) || prev.designId,
-        youtubeLiveUrl: socials.youtube || prev.youtubeLiveUrl,
-        whatsappNumber: socials.whatsapp || prev.whatsappNumber,
-        teaserUrl: socials.website || prev.teaserUrl,
+        service: 'youtube',
+        designId: (portal.websiteDesignId as string) || (portal.themeId as string) || prev.designId,
+        designName: (portal.websiteDesignId as string) || (portal.themeId as string) || prev.designName,
+        liveTimings: (portal.liveTimings as string) || prev.liveTimings,
+        domainName: (portal.slug as string) || prev.domainName,
+        youtubeChannel: (portal.youtubeChannel as string) || prev.youtubeChannel,
+        youtubeLiveUrl: (portal.youtubeLiveUrl as string) || prev.youtubeLiveUrl,
+        youtubeLiveKey: (portal.youtubeLiveKey as string) || prev.youtubeLiveKey,
+        teaserUrl: (portal.teaserUrl as string) || prev.teaserUrl,
+        scrollMessage: (portal.scrollMessage as string) || prev.scrollMessage,
+        watchLiveButton: portal.watchLiveButton ?? prev.watchLiveButton,
+        socialShare: portal.socialShare ?? prev.socialShare,
+        whatsappNumber: (portal.whatsappNumber as string) || prev.whatsappNumber,
+        remarks1: (portal.remarks1 as string) || prev.remarks1,
+        remarks2: (portal.remarks2 as string) || prev.remarks2,
+        fontStyle: (portal.fontStyle as string) || prev.fontStyle,
+        fontColor: (portal.fontColor as string) || prev.fontColor,
       };
       data.description = JSON.stringify(merged);
     }

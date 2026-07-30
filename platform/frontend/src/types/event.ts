@@ -46,6 +46,28 @@ export interface EventAnalytics {
 }
 
 export interface EventFormValues {
+  serviceType: 'youtube'
+  eventDate: string
+  liveTimings: string
+  rememberChoice: boolean
+  youtubeChannel: string
+  youtubeLiveUrl: string
+  youtubeLiveKey: string
+  teaserUrl: string
+  scrollMessage: string
+  watchLiveButton: boolean
+  socialShare: boolean
+  whatsappNumber: string
+  remarks1: string
+  remarks2: string
+  fontStyle: string
+  fontColor: string
+  pin: string
+  websiteDesignId: string
+  eventImages: string[]
+  logo: string | null
+  customImage: string | null
+  whatsappImage: string | null
   name: string
   slug: string
   category: string

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Share2 } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { CREAM_THEMES, getCreamTheme, type CreamThemeDef } from './creamThemes'
+import { toWhatsAppHref } from '@/lib/whatsapp'
 import './theme1.css'
 
 const CDN = 'https://push-1507.5centscdn.com/http/assets4/images1'
@@ -156,7 +157,7 @@ export function CreamTheme({
             ) : null}
             {whatsappNumber ? (
               <a
-                href={`https://wa.me/91${whatsappNumber}`}
+                href={toWhatsAppHref(whatsappNumber)}
                 target="_blank"
                 rel="noreferrer"
                 className="theme1-action-btn"

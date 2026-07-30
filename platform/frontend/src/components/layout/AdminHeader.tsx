@@ -12,6 +12,7 @@ interface AdminHeaderProps {
   onPublish?: () => void
   saving?: boolean
   className?: string
+  compact?: boolean
 }
 
 export function AdminHeader({
@@ -24,6 +25,7 @@ export function AdminHeader({
   onPublish,
   saving,
   className,
+  compact,
 }: AdminHeaderProps) {
   return (
     <header
@@ -48,7 +50,9 @@ export function AdminHeader({
           </h1>
         </div>
 
-        <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
+        <div className={cn('order-last flex w-full items-center gap-2 sm:order-none sm:w-auto', compact && 'w-auto')}>
+          {!compact && (
+            <>
           <div className="relative min-w-0 flex-1 sm:w-52 lg:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gold/70" />
             <input
@@ -68,6 +72,8 @@ export function AdminHeader({
               10
             </span>
           </button>
+            </>
+          )}
 
           <div className="hidden items-center gap-2 sm:flex">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-gold to-orange text-xs font-bold text-[#080808]">

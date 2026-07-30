@@ -49,7 +49,7 @@ Scaffold: `platform/mobile/README.md`. Flutter apps consume the same JWT + `/api
 
 ## DevOps additions
 
-- `deploy/backup.sh` — daily SQLite/MySQL dump
+- `deploy/backup.sh` — daily MySQL dump
 - `deploy/blue-green.sh` — symlink swap pattern for PM2
 - Prometheus `/api/metrics` + compose Grafana
 - GitHub Actions CI (backend + frontend build)

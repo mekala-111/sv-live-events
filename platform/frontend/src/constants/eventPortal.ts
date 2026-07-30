@@ -74,6 +74,9 @@ export const ADMIN_NAV: NavGroup[] = [
 ]
 
 export const CATEGORIES = [
+  { value: 'Marriage', label: 'Marriage' },
+  { value: 'Reunion', label: 'Reunion' },
+  { value: 'Other', label: 'Other' },
   { value: 'wedding', label: 'Wedding' },
   { value: 'birthday', label: 'Birthday' },
   { value: 'corporate', label: 'Corporate' },
@@ -85,6 +88,28 @@ export const CATEGORIES = [
   { value: 'engagement', label: 'Engagement' },
   { value: 'housewarming', label: 'Housewarming' },
   { value: 'religious', label: 'Religious' },
+]
+
+export const SERVICE_OPTIONS = [{ value: 'youtube', label: 'YouTube' }]
+
+export const YOUTUBE_CHANNELS = [
+  { value: '', label: 'Select a channel' },
+  { value: 'sv-live-events', label: 'SV Live Events' },
+]
+
+export const FONT_STYLES = [
+  { value: 'Outfit', label: 'Outfit' },
+  { value: 'Space Grotesk', label: 'Space Grotesk' },
+  { value: 'Playfair Display', label: 'Playfair Display' },
+  { value: 'Cinzel', label: 'Cinzel' },
+  { value: 'Great Vibes', label: 'Great Vibes' },
+]
+
+export const WEBSITE_DESIGNS: EventTheme[] = [
+  { id: 'theme-1', name: 'NewStyle6', gradient: 'linear-gradient(135deg,#fff8f2,#c45c26)' },
+  { id: 'cream-02-wedding', name: 'Wedding Classic', gradient: 'linear-gradient(135deg,#fffaf3,#9a3412)' },
+  { id: 'cream-03-engagement', name: 'Engagement Rose', gradient: 'linear-gradient(135deg,#fce7f3,#be185d)' },
+  { id: 'cream-04-reception', name: 'Reception Gold', gradient: 'linear-gradient(135deg,#fef3c7,#b45309)' },
 ]
 
 export const SUB_CATEGORIES: Record<string, { value: string; label: string }[]> = {
@@ -216,11 +241,33 @@ export const DETAIL_FIELDS = [
 ]
 
 export const DEFAULT_EVENT: EventFormValues = {
-  name: 'Annual Grand Wedding Ceremony',
-  slug: 'annual-grand-wedding-ceremony',
-  category: 'wedding',
+  serviceType: 'youtube',
+  eventDate: '2026-07-30',
+  liveTimings: 'Live Starts on 30 Jul, 2026 from 6:00 PM IST Onwards',
+  rememberChoice: true,
+  youtubeChannel: '',
+  youtubeLiveUrl: '',
+  youtubeLiveKey: '',
+  teaserUrl: '',
+  scrollMessage: '',
+  watchLiveButton: true,
+  socialShare: true,
+  whatsappNumber: '',
+  remarks1: '',
+  remarks2: '',
+  fontStyle: 'Outfit',
+  fontColor: '#FFCC00',
+  pin: '1234',
+  websiteDesignId: 'theme-1',
+  eventImages: [],
+  logo: null,
+  customImage: null,
+  whatsappImage: null,
+  name: 'Ravi weds Rani',
+  slug: 'raviwedsrani',
+  category: 'Marriage',
   subCategory: 'traditional',
-  themeId: 'royal-wedding',
+  themeId: 'theme-1',
   language: 'en',
   status: 'published',
   privacy: 'public',

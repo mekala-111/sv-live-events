@@ -55,6 +55,8 @@ export function streamToForm(stream: StreamRow): EventPayload {
   const desc = parseDesc(stream.description)
   const portal = desc.portal ?? {}
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const designId = String(desc.designId || portal.websiteDesignId || portal.themeId || DEFAULT_EVENT.websiteDesignId)
+  const serviceType = desc.service === 'youtube' || desc.youtubeLiveUrl || portal.serviceType === 'youtube' ? 'youtube' : DEFAULT_EVENT.serviceType
   return {
     ...DEFAULT_EVENT,
     ...portal,
@@ -64,9 +66,33 @@ export function streamToForm(stream: StreamRow): EventPayload {
     registrationFields: portal.registrationFields ?? DEFAULT_EVENT.registrationFields,
     keywords: portal.keywords ?? DEFAULT_EVENT.keywords,
     id: stream.id,
+    serviceType,
     name: stream.title,
     slug: stream.slug,
-    category: (stream.eventType || portal.category || 'wedding').toLowerCase(),
+    category: stream.eventType || portal.category || 'Marriage',
+    themeId: designId,
+    websiteDesignId: designId,
+    eventDate:
+      portal.eventDate ||
+      (stream.scheduledAt ? toLocalInput(stream.scheduledAt).slice(0, 10) : DEFAULT_EVENT.eventDate),
+    liveTimings: String(desc.liveTimings || portal.liveTimings || DEFAULT_EVENT.liveTimings),
+    youtubeChannel: String(desc.youtubeChannel || portal.youtubeChannel || ''),
+    youtubeLiveUrl: String(desc.youtubeLiveUrl || portal.youtubeLiveUrl || ''),
+    youtubeLiveKey: String(desc.youtubeLiveKey || portal.youtubeLiveKey || ''),
+    teaserUrl: String(desc.teaserUrl || portal.teaserUrl || ''),
+    scrollMessage: String(desc.scrollMessage || portal.scrollMessage || ''),
+    watchLiveButton: desc.watchLiveButton !== undefined ? Boolean(desc.watchLiveButton) : portal.watchLiveButton ?? true,
+    socialShare: desc.socialShare !== undefined ? Boolean(desc.socialShare) : portal.socialShare ?? true,
+    whatsappNumber: String(desc.whatsappNumber || portal.whatsappNumber || ''),
+    remarks1: String(desc.remarks1 || portal.remarks1 || ''),
+    remarks2: String(desc.remarks2 || portal.remarks2 || ''),
+    fontStyle: String(desc.fontStyle || portal.fontStyle || DEFAULT_EVENT.fontStyle),
+    fontColor: String(desc.fontColor || portal.fontColor || DEFAULT_EVENT.fontColor),
+    pin: portal.pin || stream.streamKey?.replace(/\D/g, '').slice(0, 4) || DEFAULT_EVENT.pin,
+    eventImages: portal.eventImages ?? DEFAULT_EVENT.eventImages,
+    logo: portal.logo ?? DEFAULT_EVENT.logo,
+    customImage: portal.customImage ?? DEFAULT_EVENT.customImage,
+    whatsappImage: portal.whatsappImage ?? DEFAULT_EVENT.whatsappImage,
     rtmpUrl: stream.rtmpUrl || portal.rtmpUrl || DEFAULT_EVENT.rtmpUrl,
     streamKey: stream.streamKey || portal.streamKey || '',
     autoRecording: stream.isRecording,
@@ -90,9 +116,66 @@ export async function fetchEvent(id: string): Promise<EventPayload> {
 function slugify(name: string) {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^a-z0-9]+/g, '')
     .replace(/^-|-$/g, '')
-    .slice(0, 48) || `event-${Date.now().toString(36)}`
+    .slice(0, 48) || `event${Date.now().toString(36)}`
+}
+
+function toPortal(data: EventFormValues, as: 'draft' | 'publish', slug: string, password: string) {
+  return {
+    serviceType: 'youtube' as const,
+    eventDate: data.eventDate,
+    category: data.category,
+    themeId: data.websiteDesignId || data.themeId,
+    websiteDesignId: data.websiteDesignId || data.themeId,
+    name: data.name,
+    slug,
+    rememberChoice: data.rememberChoice,
+    liveTimings: data.liveTimings,
+    bookingEnabled: data.bookingEnabled,
+    youtubeChannel: data.youtubeChannel,
+    youtubeLiveUrl: data.youtubeLiveUrl,
+    youtubeLiveKey: data.youtubeLiveKey,
+    teaserUrl: data.teaserUrl,
+    scrollMessage: data.scrollMessage,
+    eventImages: data.eventImages ?? [],
+    logo: data.logo ?? null,
+    customImage: data.customImage ?? null,
+    whatsappImage: data.whatsappImage ?? null,
+    watchLiveButton: data.watchLiveButton,
+    socialShare: data.socialShare,
+    whatsappNumber: data.whatsappNumber,
+    remarks1: data.remarks1,
+    remarks2: data.remarks2,
+    fontStyle: data.fontStyle,
+    fontColor: data.fontColor,
+    pin: data.pin,
+    status: (as === 'publish' ? 'published' : 'draft') as EventFormValues['status'],
+    guestPassword: password,
+  }
+}
+
+function toWebsiteConfig(portal: ReturnType<typeof toPortal>) {
+  return {
+    service: 'youtube',
+    designId: portal.websiteDesignId,
+    designName: portal.websiteDesignId,
+    liveTimings: portal.liveTimings,
+    domainName: portal.slug,
+    youtubeChannel: portal.youtubeChannel,
+    youtubeLiveUrl: portal.youtubeLiveUrl,
+    youtubeLiveKey: portal.youtubeLiveKey,
+    teaserUrl: portal.teaserUrl,
+    scrollMessage: portal.scrollMessage,
+    watchLiveButton: portal.watchLiveButton,
+    socialShare: portal.socialShare,
+    whatsappNumber: portal.whatsappNumber,
+    remarks1: portal.remarks1,
+    remarks2: portal.remarks2,
+    fontStyle: portal.fontStyle,
+    fontColor: portal.fontColor,
+    portal,
+  }
 }
 
 export async function saveEvent(
@@ -101,23 +184,18 @@ export async function saveEvent(
   id?: string,
 ): Promise<EventPayload> {
   const slug = data.slug?.trim() || slugify(data.name)
-  const password = data.guestPassword?.trim().length >= 4 ? data.guestPassword.trim() : `guest${Date.now().toString(36).slice(-6)}`
-  const scheduledAt = data.startDate ? new Date(data.startDate).toISOString() : null
-  const portal = {
-    ...data,
-    slug,
-    guestPassword: password,
-    status: (as === 'publish' ? 'published' : data.status === 'published' ? 'published' : 'draft') as EventFormValues['status'],
-  }
+  const password = data.pin?.trim().length >= 4 ? data.pin.trim() : `1234`
+  const scheduledAt = data.eventDate ? new Date(`${data.eventDate}T00:00:00`).toISOString() : null
+  const portal = toPortal(data, as, slug, password)
+  const website = toWebsiteConfig(portal)
 
   if (!id) {
-    const desc = { portal, designId: data.themeId }
     const res = await api.post<Envelope<StreamRow>>('/stream/events', {
       title: data.name.trim() || 'Untitled Event',
-      eventType: data.category || 'wedding',
-      description: JSON.stringify(desc),
+      eventType: data.category || 'Marriage',
+      description: JSON.stringify(website),
       scheduledAt: scheduledAt || undefined,
-      isRecording: data.autoRecording,
+      isRecording: false,
       password,
       slug,
     })
@@ -134,10 +212,10 @@ export async function saveEvent(
 
   const res = await api.patch<Envelope<StreamRow>>(`/stream/events/${id}`, {
     title: data.name.trim() || 'Untitled Event',
-    eventType: data.category || 'wedding',
+    eventType: data.category || 'Marriage',
     slug,
     scheduledAt,
-    isRecording: data.autoRecording,
+    isRecording: false,
     password,
     portal,
     publish: as === 'publish',

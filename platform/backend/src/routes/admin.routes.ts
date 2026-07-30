@@ -7,14 +7,41 @@ const router = Router();
 
 router.use(requireAuth, requireRole('ADMIN', 'STAFF', 'SUPER_ADMIN'));
 
+function monthWindow(months = 6) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+  const buckets = Array.from({ length: months }, (_, i) => {
+    const date = new Date(start.getFullYear(), start.getMonth() + i, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    return {
+      key,
+      month: date.toLocaleString('en', { month: 'short' }),
+      revenue: 0,
+      bookings: 0,
+    };
+  });
+  return { start, buckets };
+}
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 router.get('/dashboard', async (_req, res, next) => {
   try {
+    const { start, buckets } = monthWindow(6);
+    const bucketMap = new Map(buckets.map((b) => [b.key, b]));
     const [
       totalUsers,
       totalBookings,
       pendingBookings,
       confirmedBookings,
-      totalRevenue,
+      paidBookingRevenue,
+      paidPayments,
+      monthlyBookings,
+      totalStreams,
+      liveStreams,
+      streamViewers,
       recentBookings,
     ] = await Promise.all([
       prisma.user.count(),
@@ -25,12 +52,43 @@ router.get('/dashboard', async (_req, res, next) => {
         where: { paymentStatus: 'PAID' },
         _sum: { totalAmount: true },
       }),
+      prisma.payment.findMany({
+        where: { status: 'PAID', createdAt: { gte: start } },
+        select: { amount: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
       prisma.booking.findMany({
-        take: 5,
+        where: { eventDate: { gte: start } },
+        select: { eventDate: true, totalAmount: true, paymentStatus: true },
+        orderBy: { eventDate: 'asc' },
+      }),
+      prisma.stream.count(),
+      prisma.stream.count({ where: { status: 'LIVE' } }),
+      prisma.stream.aggregate({ _sum: { currentViewers: true, peakViewers: true } }),
+      prisma.booking.findMany({
+        take: 8,
         orderBy: { createdAt: 'desc' },
         include: { package: true, user: { select: { name: true, email: true } } },
       }),
     ]);
+
+    const usePaymentsForRevenue = paidPayments.length > 0;
+
+    for (const booking of monthlyBookings) {
+      const bucket = bucketMap.get(monthKey(booking.eventDate));
+      if (!bucket) continue;
+      bucket.bookings += 1;
+      if (!usePaymentsForRevenue && booking.paymentStatus === 'PAID') bucket.revenue += booking.totalAmount;
+    }
+
+    const paymentRevenue = paidPayments.reduce((sum, payment) => {
+      const bucket = bucketMap.get(monthKey(payment.createdAt));
+      if (bucket) bucket.revenue += payment.amount;
+      return sum + payment.amount;
+    }, 0);
+
+    const totalPaidBookingRevenue = paidBookingRevenue._sum.totalAmount ?? 0;
+    const totalRevenue = paymentRevenue > 0 ? paymentRevenue : totalPaidBookingRevenue;
 
     res.json({
       success: true,
@@ -40,9 +98,27 @@ router.get('/dashboard', async (_req, res, next) => {
           bookings: totalBookings,
           pendingBookings,
           confirmedBookings,
+          streams: totalStreams,
+          liveStreams,
+          currentViewers: streamViewers._sum.currentViewers ?? 0,
+          peakViewers: streamViewers._sum.peakViewers ?? 0,
         },
-        revenue: totalRevenue._sum.totalAmount ?? 0,
-        recentBookings,
+        revenue: totalRevenue,
+        charts: {
+          revenue: buckets.map(({ month, revenue }) => ({ month, revenue })),
+          bookings: buckets.map(({ month, bookings }) => ({ month, bookings })),
+        },
+        recentBookings: recentBookings.map((booking) => ({
+          id: booking.id,
+          bookingCode: booking.bookingCode,
+          eventTitle: booking.eventTitle,
+          eventDate: booking.eventDate,
+          totalAmount: booking.totalAmount,
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          packageName: booking.package.name,
+          user: booking.user,
+        })),
       },
     });
   } catch (err) {

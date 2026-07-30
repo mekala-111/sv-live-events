@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { getPremiumTheme, type PremiumThemeDef } from './premiumThemes'
+import { toWhatsAppHref } from '@/lib/whatsapp'
 import './premium-live.css'
 
 export type PremiumChatMsg = {
@@ -382,7 +383,7 @@ export function PremiumLiveShell({
             ) : null}
             {whatsappNumber ? (
               <a
-                href={`https://wa.me/91${whatsappNumber}`}
+                href={toWhatsAppHref(whatsappNumber)}
                 target="_blank"
                 rel="noreferrer"
                 className="plx-btn plx-btn--ghost"

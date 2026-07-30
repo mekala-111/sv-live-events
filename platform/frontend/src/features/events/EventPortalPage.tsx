@@ -1,40 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { FormProvider, useForm } from 'react-hook-form'
+import { FormProvider, useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
-import { Plus } from 'lucide-react'
+import { LogOut, Plus } from 'lucide-react'
 import { DEFAULT_EVENT } from '@/constants/eventPortal'
 import { eventSchema } from '@/features/events/schema'
 import type { EventFormValues } from '@/types/event'
 import {
-  deleteEvent,
-  duplicateEvent,
-  fetchAnalytics,
   fetchEvent,
   listEvents,
   saveEvent,
 } from '@/services/eventService'
 import { AdminHeader } from '@/components/layout/AdminHeader'
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EventPortalSkeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/hooks/useToast'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  AnalyticsSection,
-  BasicInfoSection,
-  BrandingSection,
-  DetailsSection,
-  GuestAccessSection,
-  LiveFeaturesSection,
+  AccessSection,
+  AppearanceSection,
+  EventContentSection,
+  EventInformationSection,
+  EventMediaSection,
   PublishSection,
-  RegistrationSection,
-  SeoSection,
-  SocialSection,
-  StreamingSection,
-  ThemeSection,
+  YouTubeStreamingSection,
 } from '@/features/events/sections'
 
 type OutletCtx = { openMobileNav: () => void }
@@ -47,7 +38,6 @@ export default function EventPortalPage() {
   const { user } = useAuth()
   const { toast, ToastHost } = useToast()
   const queryClient = useQueryClient()
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const [eventId, setEventId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY))
   const [creating, setCreating] = useState(false)
 
@@ -75,14 +65,8 @@ export default function EventPortalPage() {
     enabled: Boolean(activeId),
   })
 
-  const analyticsQuery = useQuery({
-    queryKey: ['event-analytics', activeId],
-    queryFn: () => fetchAnalytics(activeId!),
-    enabled: Boolean(activeId),
-  })
-
   const form = useForm<EventFormValues>({
-    resolver: zodResolver(eventSchema),
+    resolver: zodResolver(eventSchema) as unknown as Resolver<EventFormValues>,
     defaultValues: DEFAULT_EVENT,
     mode: 'onChange',
   })
@@ -93,10 +77,11 @@ export default function EventPortalPage() {
       form.reset({
         ...DEFAULT_EVENT,
         name: 'New Live Event',
-        slug: `event-${stamp}`,
+        slug: `event${stamp}`,
         status: 'draft',
         streamKey: '',
-        guestPassword: `guest${stamp.slice(-6)}`,
+        pin: '1234',
+        guestPassword: '1234',
         invitationLink: '',
       })
       return
@@ -125,33 +110,6 @@ export default function EventPortalPage() {
     onError: (err) => toast(apiErr(err, 'Could not save event'), 'error'),
   })
 
-  const duplicateMutation = useMutation({
-    mutationFn: () => duplicateEvent(activeId!),
-    onSuccess: (data) => {
-      if (data.id) {
-        setEventId(data.id)
-        localStorage.setItem(STORAGE_KEY, data.id)
-      }
-      setCreating(false)
-      form.reset(data)
-      queryClient.invalidateQueries({ queryKey: ['events'] })
-      toast('Event duplicated')
-    },
-    onError: (err) => toast(apiErr(err, 'Could not duplicate'), 'error'),
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteEvent(activeId!),
-    onSuccess: () => {
-      setConfirmDelete(false)
-      localStorage.removeItem(STORAGE_KEY)
-      setEventId(null)
-      queryClient.invalidateQueries({ queryKey: ['events'] })
-      toast('Event deleted', 'info')
-    },
-    onError: (err) => toast(apiErr(err, 'Could not delete'), 'error'),
-  })
-
   const onCopy = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -163,7 +121,7 @@ export default function EventPortalPage() {
 
   const submit = (as: 'draft' | 'publish') =>
     form.handleSubmit(
-      (data) => saveMutation.mutate({ data, as }),
+      (data) => saveMutation.mutate({ data: data as EventFormValues, as }),
       () => toast('Fix validation errors before continuing', 'error'),
     )()
 
@@ -175,15 +133,27 @@ export default function EventPortalPage() {
   }
 
   const onNew = () => {
+    if (form.formState.isDirty && !window.confirm('You have unsaved changes. Create a new event anyway?')) return
     setCreating(true)
     setEventId(null)
   }
 
   const onSelect = (id: string) => {
+    if (form.formState.isDirty && id !== eventId && !window.confirm('You have unsaved changes. Switch events anyway?')) return
     setCreating(false)
     setEventId(id)
     localStorage.setItem(STORAGE_KEY, id)
   }
+
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!form.formState.isDirty) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', beforeUnload)
+    return () => window.removeEventListener('beforeunload', beforeUnload)
+  }, [form.formState.isDirty])
 
   if (listQuery.isLoading || (activeId && eventQuery.isLoading)) return <EventPortalSkeleton />
 
@@ -202,13 +172,19 @@ export default function EventPortalPage() {
         onSaveDraft={() => submit('draft')}
         onPublish={() => submit('publish')}
         saving={saveMutation.isPending}
+        compact
       />
 
       <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm text-white/45">
-              Configure every detail of your live event — streaming, branding, access, and publish in one place.
+            <div className="flex flex-wrap gap-4 text-sm">
+              <a href="/admin/events" className="font-semibold text-white underline decoration-white/20 underline-offset-4 hover:text-gold">My Events</a>
+              <button type="button" onClick={() => activeId && onSelect(activeId)} className="font-semibold text-white underline decoration-white/20 underline-offset-4 hover:text-gold">Quick Edit</button>
+              <a href="#logout" className="inline-flex items-center gap-1 font-semibold text-white underline decoration-white/20 underline-offset-4 hover:text-red-300"><LogOut className="h-3.5 w-3.5" /> Logout</a>
+            </div>
+            <p className="mt-3 text-sm text-white/45">
+              Configure the original YouTube event website fields with the modern SV Live admin theme.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -240,37 +216,18 @@ export default function EventPortalPage() {
             className="space-y-6"
           >
             <div className="grid gap-6 lg:grid-cols-2">
-              <BasicInfoSection onSave={() => submit('draft')} saving={saveMutation.isPending} />
-              <StreamingSection onCopy={onCopy} />
+              <EventInformationSection />
+              <YouTubeStreamingSection onCopy={onCopy} />
             </div>
-
-            <BrandingSection />
-            <ThemeSection />
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <DetailsSection />
-              <div className="space-y-6">
-                <SocialSection />
-                <LiveFeaturesSection />
-              </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <GuestAccessSection onCopy={onCopy} />
-              <RegistrationSection />
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <SeoSection />
-              <AnalyticsSection data={analyticsQuery.data} />
-            </div>
+            <EventContentSection />
+            <EventMediaSection />
+            <AppearanceSection onPreview={onPreview} />
+            <AccessSection onCopy={onCopy} />
 
             <PublishSection
               onPreview={onPreview}
               onDraft={() => submit('draft')}
               onPublish={() => submit('publish')}
-              onDuplicate={() => activeId && duplicateMutation.mutate()}
-              onDelete={() => activeId && setConfirmDelete(true)}
             />
           </form>
         </FormProvider>
@@ -280,17 +237,6 @@ export default function EventPortalPage() {
           <p>Crafted for unforgettable events.</p>
         </footer>
       </main>
-
-      <ConfirmDialog
-        open={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        title="Delete event?"
-        message="This permanently deletes the stream and related sessions. This cannot be undone."
-        confirmLabel="Delete Event"
-        danger
-        loading={deleteMutation.isPending}
-        onConfirm={() => deleteMutation.mutate()}
-      />
     </>
   )
 }
