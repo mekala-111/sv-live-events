@@ -53,7 +53,7 @@ function mapStatus(streamStatus: string, portalStatus?: EventFormValues['status'
 
 export function streamToForm(stream: StreamRow): EventPayload {
   const desc = parseDesc(stream.description)
-  const portal = desc.portal ?? {}
+  const portal = cleanPortalImages(desc.portal ?? {})
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const designId = String(desc.designId || portal.websiteDesignId || portal.themeId || DEFAULT_EVENT.websiteDesignId)
   const serviceType = desc.service === 'youtube' || desc.youtubeLiveUrl || portal.serviceType === 'youtube' ? 'youtube' : DEFAULT_EVENT.serviceType
@@ -124,6 +124,16 @@ function slugify(name: string) {
 function persistUrl(url: string | null | undefined) {
   if (!url || url.startsWith('blob:')) return null
   return url
+}
+
+function cleanPortalImages<T extends Partial<EventFormValues>>(portal: T): T {
+  return {
+    ...portal,
+    eventImages: (portal.eventImages ?? []).map(persistUrl).filter((u): u is string => Boolean(u)),
+    logo: persistUrl(portal.logo) ?? null,
+    customImage: persistUrl(portal.customImage) ?? null,
+    whatsappImage: persistUrl(portal.whatsappImage) ?? null,
+  }
 }
 
 function toPortal(data: EventFormValues, as: 'draft' | 'publish', slug: string, password: string) {

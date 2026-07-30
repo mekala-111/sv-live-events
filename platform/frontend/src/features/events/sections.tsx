@@ -164,7 +164,12 @@ function SingleImageUpload({
         }}
       >
         {value ? (
-          <img src={value} alt={label} className="h-full w-full object-cover" />
+          <img
+            src={value}
+            alt={label}
+            className="h-full w-full object-cover"
+            onError={() => onChange(null)}
+          />
         ) : (
           <button
             type="button"
@@ -261,8 +266,19 @@ function EventImagesUpload() {
       {images.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {images.map((src, index) => (
-            <div key={`${src}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-[#121212]">
-              <img src={src} alt={`Event image ${index + 1}`} className="h-full w-full object-cover" />
+            <div key={`${src.slice(0, 48)}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-[#121212]">
+              <img
+                src={src}
+                alt={`Event image ${index + 1}`}
+                className="h-full w-full object-cover"
+                onError={() =>
+                  setValue(
+                    'eventImages',
+                    images.filter((_, i) => i !== index),
+                    { shouldDirty: true, shouldValidate: true },
+                  )
+                }
+              />
               <button
                 type="button"
                 onClick={() => setValue('eventImages', images.filter((_, i) => i !== index), { shouldDirty: true, shouldValidate: true })}
