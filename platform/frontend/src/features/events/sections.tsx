@@ -9,17 +9,51 @@ import {
   YOUTUBE_CHANNELS,
 } from '@/constants/eventPortal'
 import type { EventFormValues } from '@/types/event'
+import type { EventThemeRecord } from '@/types/theme'
 import { SectionCard } from '@/components/ui/SectionCard'
 import { Select } from '@/components/ui/Select'
 import { Toggle } from '@/components/ui/Toggle'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { cn } from '@/lib/utils'
+import { usePublishedThemes } from '@/features/theme/DynamicThemeShell'
 
 const MAX_EVENT_IMAGES = 10
 const EVENT_IMAGE_MAX = 4 * 1024 * 1024
 const SMALL_IMAGE_MAX = 500 * 1024
 const IMAGE_TYPES = ['image/jpeg', 'image/png']
+
+type ThemeDesignOption = {
+  id: string
+  name: string
+  category: string
+  preview?: string
+  gradient: string
+}
+
+function themeToDesign(theme: EventThemeRecord): ThemeDesignOption {
+  const gradientColors = Array.isArray(theme.gradientColors) ? theme.gradientColors : []
+  const from = gradientColors[0] || theme.backgroundColor || '#121212'
+  const to = gradientColors[1] || theme.primaryColor || '#F7B733'
+  return {
+    id: theme.slug || theme.id,
+    name: theme.name,
+    category: theme.category,
+    preview: theme.previewImage || theme.desktopBackground || undefined,
+    gradient: `linear-gradient(135deg, ${from}, ${to})`,
+  }
+}
+
+function useThemeBuilderDesigns() {
+  const query = usePublishedThemes()
+  const fallback: ThemeDesignOption[] = WEBSITE_DESIGNS.map((d) => ({ ...d, category: 'Fallback' }))
+  const designs = query.data?.length ? query.data.map(themeToDesign) : fallback
+  return {
+    ...query,
+    designs,
+    fromThemeBuilder: Boolean(query.data?.length),
+  }
+}
 
 function FieldError({ name }: { name: FieldPath<EventFormValues> }) {
   const {
@@ -247,6 +281,7 @@ function EventImagesUpload() {
 export function EventInformationSection() {
   const { register, control, setValue, watch } = useFormContext<EventFormValues>()
   const slug = watch('slug')
+  const { designs, isLoading } = useThemeBuilderDesigns()
 
   return (
     <SectionCard title="Event Information" description="Original portal fields, modernized" delay={0.05}>
@@ -254,7 +289,21 @@ export function EventInformationSection() {
         <Controller name="serviceType" control={control} render={({ field }) => <Select label="Selected Service" options={SERVICE_OPTIONS} {...field} />} />
         <Input id="eventDate" type="date" label="Event Date" {...register('eventDate')} />
         <Controller name="category" control={control} render={({ field }) => <Select label="Event Type" options={CATEGORIES} {...field} />} />
-        <Controller name="themeId" control={control} render={({ field }) => <Select label="Design" options={WEBSITE_DESIGNS.map((d) => ({ value: d.id, label: d.name }))} {...field} onChange={(e) => { field.onChange(e); setValue('websiteDesignId', e.target.value, { shouldDirty: true }) }} />} />
+        <Controller
+          name="themeId"
+          control={control}
+          render={({ field }) => (
+            <Select
+              label="Design"
+              options={designs.map((d) => ({ value: d.id, label: isLoading ? 'Loading themes…' : d.name }))}
+              {...field}
+              onChange={(e) => {
+                field.onChange(e)
+                setValue('websiteDesignId', e.target.value, { shouldDirty: true, shouldValidate: true })
+              }}
+            />
+          )}
+        />
         <div>
           <Input id="name" label="Page Title" placeholder="Ravi weds Rani" maxLength={80} {...register('name')} />
           <FieldError name="name" />
@@ -357,6 +406,7 @@ export function AppearanceSection({ onPreview }: { onPreview: () => void }) {
   const { register, control, setValue, watch } = useFormContext<EventFormValues>()
   const selected = watch('websiteDesignId')
   const fontColor = watch('fontColor')
+  const { designs, fromThemeBuilder, isLoading, isError } = useThemeBuilderDesigns()
   return (
     <SectionCard title="Appearance" action={<Button type="button" variant="outline" size="sm" onClick={onPreview}><Eye className="h-3.5 w-3.5" /> Preview</Button>} delay={0.14}>
       <div className="grid gap-4 md:grid-cols-2">
@@ -372,8 +422,17 @@ export function AppearanceSection({ onPreview }: { onPreview: () => void }) {
       </div>
       <div className="mt-5">
         <Label>Website Design</Label>
+        <p className="mb-3 text-xs text-white/35">
+          {isLoading
+            ? 'Loading designs from Theme Builder…'
+            : fromThemeBuilder
+              ? 'Showing published designs from Theme Builder.'
+              : isError
+                ? 'Could not load Theme Builder designs. Showing fallback designs.'
+                : 'No published Theme Builder designs yet. Showing fallback designs.'}
+        </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {WEBSITE_DESIGNS.map((design) => (
+          {designs.map((design) => (
             <button
               key={design.id}
               type="button"
@@ -386,9 +445,20 @@ export function AppearanceSection({ onPreview }: { onPreview: () => void }) {
                 selected === design.id ? 'border-gold shadow-[var(--glow-gold)]' : 'border-white/10',
               )}
             >
-              <div className="h-20" style={{ background: design.gradient }} />
+              <div
+                className="h-20 bg-cover bg-center"
+                style={{
+                  background: design.preview ? undefined : design.gradient,
+                  backgroundImage: design.preview ? `url(${design.preview})` : undefined,
+                }}
+              />
               <div className="flex items-center justify-between p-3">
-                <span className="text-sm font-medium text-white">{design.name}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-white">{design.name}</span>
+                  {'category' in design && design.category ? (
+                    <span className="block truncate text-[10px] text-white/35">{design.category}</span>
+                  ) : null}
+                </span>
                 {selected === design.id && <Check className="h-4 w-4 text-gold" />}
               </div>
             </button>
